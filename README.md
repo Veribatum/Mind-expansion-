@@ -1,0 +1,21 @@
+# Mind Expansion
+
+A daily reading and recall app. Start with one short, sourced idea, then use the recall queue to revisit what you’ve learned. Search the library by idea, topic, source, researcher, or a phrase from your notes.
+
+## Run it
+
+Serve the repository root over HTTP, for example with `python3 -m http.server 8000`. For GitHub Pages, select **Settings → Pages → Deploy from a branch → main → /(root)**. The app has no build step, backend, API key, or paid model. The service worker requires HTTPS outside localhost.
+
+## How it works
+
+- The app picks an idea for your device’s local calendar date on opening and checks for a new day when you come back. It rotates topics and retrieves public encyclopedia entries from Simple English Wikipedia. It also includes original editorial cards, some based on books and research. Live entries are clearly labeled and link to their original articles.
+- The app pins the selected idea for that date, skips topics you’ve already seen, and caches its public-source topic pools. If a source is temporarily unavailable, it can use an unused built-in card or cached article. If neither is available, it offers a retry.
+- Recall is self-rated. Got it moves a card through 1, 3, 7, 14, 30, 60 and 120 days. Again brings it back tomorrow.
+- Your library, notes and review history live in this browser. Use **Settings → Export backup** to keep a copy and **Import backup** to merge it into another browser. Import accepts a versioned JSON format. There is no cross-device sync.
+- On iPhone, open the site in Safari and select Share → Add to Home Screen. The app shell and previously stored cards work offline. Fresh sources need a connection.
+
+## Integrating it later
+
+`learning.js` is browser- and DOM-independent. It defines the card and review model, local-day helpers, recall scheduling, and a versioned backup format. `feed.js` produces that same card shape. The UI and storage adapter live in `app.js`, so an eventual lifestyle app can reuse the content and review rules with its own storage and home screen.
+
+See individual card source links for attribution. Excerpts from Simple English Wikipedia are available under CC BY-SA 4.0.
