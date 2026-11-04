@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#132c28">
+  <meta name="description" content="One good idea a day. Read, recall, and build a library of what stays with you.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Mind Expansion</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-mark" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16"/><ellipse cx="20" cy="20" rx="7" ry="16" transform="rotate(44 20 20)"/><ellipse cx="20" cy="20" rx="7" ry="16" transform="rotate(-44 20 20)"/><circle cx="20" cy="20" r="2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></symbol>
+    <symbol id="i-review" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1.7 7m-1.7-7V4m0 6h6"/><path d="M12 8v4l3 2"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 4h4v16H4zm4 2h4v14H8zm6 1 4-1 3 13-4 1z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="var(--icon-fill, #f4f1e8)"/><circle cx="15" cy="17" r="2.6" fill="var(--icon-fill, #f4f1e8)"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4-6 4z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M13 5h6v6m0-6-9 9m7-1v6H5V7h6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2c0 6-4 10-10 10 6 0 10 4 10 10 0-6 4-10 10-10-6 0-10-4-10-10Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M5 16v4h14v-4"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="layout">
+    <aside class="rail">
+      <a class="brand" href="#today" aria-label="Mind Expansion home">
+        <svg class="brand-mark" aria-hidden="true"><use href="#i-mark"/></svg>
+        <span>Mind<br>Expansion<span class="brand-dot">.</span></span>
+      </a>
+      <p class="rail-label">WORKSPACE</p>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#today" data-route="today"><svg aria-hidden="true"><use href="#i-sun"/></svg><span>Today</span></a>
+        <a href="#review" data-route="review"><svg aria-hidden="true"><use href="#i-review"/></svg><span>Review</span><span class="nav-count" data-due-count hidden></span></a>
+        <a href="#library" data-route="library"><svg aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></a>
+        <a href="#settings" data-route="settings"><svg aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></a>
+      </nav>
+      <div class="rail-footer"><span class="rail-rule"></span><p>A little wiser.<br>One day at a time.</p><span class="rail-edition">PERSONAL FIELD NOTES</span></div>
+    </aside>
+
+    <header class="mobile-header">
+      <a class="brand" href="#today" aria-label="Mind Expansion home">
+        <svg class="brand-mark" aria-hidden="true"><use href="#i-mark"/></svg>
+        <span>Mind Expansion<span class="brand-dot">.</span></span>
+      </a>
+      <a class="icon-button" href="#settings" aria-label="Settings" data-route="settings"><svg aria-hidden="true"><use href="#i-settings"/></svg></a>
+    </header>
+
+    <main id="main" class="main" tabindex="-1">
+      <div id="app" class="page" aria-busy="true">
+        <p class="eyebrow">THE DAILY EDITION</p>
+        <h1>Today’s idea<span class="heading-dot">.</span></h1>
+        <p class="subheading">A few minutes to learn something that sticks.</p>
+        <div class="panel loading">Opening your edition…</div>
+      </div>
+      <noscript><p class="panel">Turn on JavaScript to read your daily idea and keep your learning library.</p></noscript>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Mobile navigation">
+      <a href="#today" data-route="today"><svg aria-hidden="true"><use href="#i-sun"/></svg><span>Today</span></a>
+      <a href="#review" data-route="review"><svg aria-hidden="true"><use href="#i-review"/></svg><span>Review</span><span class="nav-count" data-due-count hidden></span></a>
+      <a href="#library" data-route="library"><svg aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></a>
+    </nav>
+  </div>
+  <dialog id="detail" class="detail"></dialog>
+  <div id="notice" class="notice" role="status" aria-live="polite"></div>
+</body>
+</html>
