@@ -1,8 +1,8 @@
-const CACHE = 'mind-expansion-shell-v2';
+const CACHE = 'mind-expansion-shell-v3';
 const SHELL = [
-  './', './index.html', './styles.css', './app.js?v=2', './learning.js', './cards.js',
-  './feed.js?v=2', './storage.js', './swipe.js', './swipe.css', './swipe-stories.js', './swipe-art.js', './swipe-media.js', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
-  './icon-192.png', './icon-512.png',
+  './', './index.html', './styles.css?v=3', './app.js?v=3', './learning.js?v=3', './cards.js',
+  './feed.js?v=3', './storage.js?v=3', './swipe.js?v=3', './swipe.css?v=3', './swipe-stories.js?v=3', './swipe-art.js?v=3', './swipe-media.js?v=3', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
+  './icon-192.png', './icon-512.png', './evidence.js?v=3', './deep-cuts.js?v=3', './deep-art.js?v=3',
 ];
 
 self.addEventListener('install', event => {

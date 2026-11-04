@@ -1,8 +1,9 @@
-import { TOPICS, normalize } from './learning.js';
-import { exploreIdeas } from './feed.js?v=2';
-import { storyArt } from './swipe-art.js';
-import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js';
+import { TOPICS, normalize } from './learning.js?v=3';
+import { exploreIdeas } from './feed.js?v=3';
+import { storyArt } from './swipe-art.js?v=3';
+import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=3';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=3';
+import { evidenceDetails } from './evidence.js?v=3';
 
 const SET_SIZE = 5;
 const MAX_DECK = 120;
@@ -19,7 +20,7 @@ export function mountSwipe(root, options) {
     <aside class="reel-intro">
       <p class="reel-eyebrow"><span></span> THE DISCOVERY FEED</p>
       <h1>Good things<br>to know<span>.</span></h1>
-      <p class="reel-deck-text">A little wonder, one idea at a time. Swipe up to see where curiosity takes you.</p>
+      <p class="reel-deck-text">The unconscious mind, strange animal behavior, real history, and mysteries with a paper trail.</p>
       <div class="reel-nav">
         ${arrow('prev', 'Previous idea')}${arrow('next', 'Next idea')}
         <span class="reel-position" data-position>Opening edition</span>
@@ -50,6 +51,7 @@ export function mountSwipe(root, options) {
   let clipRequest;
   let activeClipRequest;
   let clipTimer;
+  let inlinePlayer;
   let emptyBatches = 0;
   let paused = sameDay ? resume.paused : motion.matches;
   let elapsed = 0;
@@ -75,18 +77,19 @@ export function mountSwipe(root, options) {
         ${story.beats.map((_, i) => `<button type="button" aria-label="Scene ${i + 1}" data-scene="${i}"><span></span></button>`).join('')}
       </div>
       <div class="reel-meta"><span class="reel-pill">${isDaily ? icon('sun') + ' DAILY IDEA' : esc(TOPICS[card.topic])}</span>
-        <span class="reel-format">${clip ? 'SOURCE CLIP' : card.id.startsWith('simple-wiki-') ? 'FIELD NOTE' : 'MINI EXPLAINER'}</span>
+        <span class="reel-format">${clip ? 'VIDEO ON CARD' : card.id.startsWith('simple-wiki-') ? 'FIELD NOTE' : 'MINI EXPLAINER'}</span>
         ${story.beats.length > 1 ? button('pause', 'Pause scenes', 'pause', 'data-pause') : ''}
       </div>
     </div>
-    <div class="reel-art" data-art></div>
+    <div class="reel-art"><div class="reel-illustration" data-art></div>
+      <div class="reel-inline" data-inline hidden></div></div>
     <div class="reel-copy">
       <p class="reel-kicker" data-kicker></p>
       <h2>${esc(story.title)}</h2>
       <p class="reel-caption" data-caption></p>
       <div class="reel-buttons">
         ${story.beats.length > 1 ? '<button class="reel-primary" type="button" data-swipe="beat" data-beat></button>' : ''}
-        ${clip ? '<button class="reel-text-button" type="button" data-swipe="clip">' + icon('play') + ' Watch clip</button>' : ''}
+        ${clip ? playButton() : ''}
         <button class="reel-text-button" type="button" data-swipe="read">${icon('library')} Read</button>
       </div>
     </div>
@@ -222,6 +225,7 @@ export function mountSwipe(root, options) {
     if (!entry || entry === active) return;
     clearTimeout(clipTimer);
     activeClipRequest?.abort();
+    releasePlayer();
     if (active) {
       active.element.classList.remove('is-active');
       active.element.inert = true;
@@ -232,6 +236,7 @@ export function mountSwipe(root, options) {
     entry.element.inert = false;
     entry.element.classList.add('is-active');
     reflect();
+    if (entry.clip) showPlayer(entry);
     if (entry.card && !entry.clip && canFindClip(entry.card)) {
       clipTimer = setTimeout(() => { void lookForClip(entry); }, 1300);
     }
@@ -322,13 +327,104 @@ export function mountSwipe(root, options) {
     }
   }
 
+  function playButton() {
+    return '<button class="reel-text-button" type="button" data-swipe="clip">'
+      + icon('play') + ' Play clip</button>';
+  }
+
   function offerClip(entry, clip) {
     if (entry.clip) return;
     entry.clip = clip;
-    entry.element.querySelector('.reel-format').textContent = 'SOURCE CLIP';
+    entry.element.querySelector('.reel-format').textContent = 'VIDEO ON CARD';
     const read = entry.element.querySelector('[data-swipe="read"]');
-    read.insertAdjacentHTML('beforebegin', '<button class="reel-text-button" type="button" data-swipe="clip">'
-      + icon('play') + ' Watch clip</button>');
+    read.insertAdjacentHTML('beforebegin', playButton());
+    if (active === entry) showPlayer(entry);
+  }
+
+  function releasePlayer() {
+    if (!inlinePlayer) return;
+    const { entry, video, holder } = inlinePlayer;
+    inlinePlayer = null;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    holder.replaceChildren();
+    holder.hidden = true;
+    entry.element.classList.remove('has-inline-video');
+  }
+
+  function updatePlayer(player) {
+    if (inlinePlayer !== player) return;
+    const { entry, video, failed, finished } = player;
+    const control = entry.element.querySelector('[data-swipe="clip"]');
+    control.hidden = failed;
+    if (failed) return;
+    const text = video.paused ? (finished ? 'Replay clip' : 'Play clip') : 'Pause clip';
+    control.innerHTML = icon(video.paused ? 'play' : 'pause') + ' ' + text;
+  }
+
+  function showPlayer(entry) {
+    const { clip } = entry;
+    if (!clip || inlinePlayer?.entry === entry) return;
+    const holder = entry.element.querySelector('[data-inline]');
+    holder.innerHTML = `<video class="reel-inline-video" playsinline muted controls
+      preload="metadata" aria-label="${esc(clip.title)}"></video>
+      <a class="reel-inline-credit" href="${esc(clip.page)}" target="_blank" rel="noopener noreferrer"
+      title="${esc(clip.credit)}">${esc(clip.credit)} ${icon('external')}</a>
+      <p class="reel-inline-status" role="status"></p>`;
+    const video = holder.querySelector('video');
+    const status = holder.querySelector('[role="status"]');
+    const player = { entry, holder, video, finished: false, failed: false };
+    inlinePlayer = player;
+    holder.hidden = false;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.addEventListener('loadeddata', () => {
+      if (inlinePlayer === player) entry.element.classList.add('has-inline-video');
+    });
+    for (const type of ['play', 'pause']) video.addEventListener(type, () => updatePlayer(player));
+    video.addEventListener('ended', () => {
+      player.finished = true;
+      updatePlayer(player);
+    });
+    if (clip.previewEnd) video.addEventListener('timeupdate', () => {
+      if (video.currentTime < clip.previewEnd || video.paused) return;
+      player.finished = true;
+      video.pause();
+    });
+    video.addEventListener('error', () => {
+      if (inlinePlayer !== player) return;
+      player.failed = true;
+      entry.element.classList.remove('has-inline-video');
+      status.innerHTML = 'Clip unavailable. <a href="' + esc(clip.page)
+        + '" target="_blank" rel="noopener noreferrer">Open original</a>';
+      updatePlayer(player);
+    });
+    video.src = clip.url;
+    if (!paused && !motion.matches && !document.hidden && !sheet.open
+      && !navigator.connection?.saveData && (clip.local || navigator.onLine)) {
+      void video.play().catch(() => {});
+    }
+    updatePlayer(player);
+  }
+
+  function toggleClip(entry) {
+    showPlayer(entry);
+    if (!inlinePlayer || inlinePlayer.failed) return;
+    const { video } = inlinePlayer;
+    if (!video.paused) {
+      video.pause();
+      return;
+    }
+    if (inlinePlayer.finished) {
+      video.currentTime = 0;
+      inlinePlayer.finished = false;
+    }
+    void video.play().catch(() => {});
+  }
+
+  function pauseHiddenPlayer() {
+    if (document.hidden) inlinePlayer?.video.pause();
   }
 
   async function lookForClip(entry) {
@@ -373,57 +469,33 @@ export function mountSwipe(root, options) {
     if (elapsed >= total && beat < active.story.beats.length - 1) nextScene(active, beat + 1);
   }
 
-  function clipMarkup(clip) {
+  function clipCredit(clip) {
     const licensing = clip.licenseUrl
       ? `<a href="${esc(clip.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(clip.license)}</a>`
       : esc(clip.license);
-    return `<video class="reel-video" playsinline controls preload="none" aria-label="${esc(clip.title)}"></video>
-      <p class="reel-credit">Video by ${esc(clip.credit)} · ${licensing} ·
-      <a href="${esc(clip.page)}" target="_blank" rel="noopener noreferrer">Original clip ${icon('external')}</a></p>
-      <p class="reel-video-message" role="status"></p>`;
+    return `<p class="reel-credit">Video by ${esc(clip.credit)} · ${licensing} ·
+      <a href="${esc(clip.page)}" target="_blank" rel="noopener noreferrer">Original clip ${icon('external')}</a>
+      ${clip.note ? '<br>' + esc(clip.note) : ''}</p>`;
   }
 
-  function attachClip(clip, play) {
-    const media = sheet.querySelector('[data-reel-media]');
-    media.innerHTML = clipMarkup(clip);
-    const video = media.querySelector('video');
-    const message = media.querySelector('.reel-video-message');
-    video.addEventListener('error', () => {
-      message.textContent = 'This clip could not play here. Open the original clip above or keep reading.';
-    });
-    if (clip.previewEnd) {
-      video.addEventListener('loadedmetadata', () => {
-        if (video.duration > clip.previewEnd) message.textContent = 'Showing a short preview. The original clip has the full version.';
-      });
-      video.addEventListener('timeupdate', () => {
-        if (video.currentTime < clip.previewEnd) return;
-        video.pause();
-        video.currentTime = 0;
-      });
-    }
-    video.src = clip.url;
-    if (play) void video.play().catch(() => {
-      if (video.error) return;
-      message.textContent = 'Tap play to start the clip.';
-    });
-  }
-
-  function openSheet(entry, play) {
+  function openSheet(entry) {
     const { card, story } = entry;
     const clip = entry.clip || clips.get(card.id);
     const words = card.intro.trim().split(/\s+/).length;
     const cclink = card.id.startsWith('simple-wiki-')
       ? ' · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>' : '';
+    inlinePlayer?.video.pause();
     sheet.dataset.idea = card.id;
     sheet.innerHTML = `<div class="dialog-top"><p class="eyebrow">${esc(TOPICS[card.topic])} · ${Math.max(1, Math.ceil(words/130))} MIN READ</p>
       <button type="button" class="icon-button" data-swipe="close" aria-label="Close idea" autofocus>${icon('close')}</button></div>
       <h2 id="reel-sheet-title">${esc(story.title)}</h2>
       <div data-reel-media>
-        ${!clip && canFindClip(card) ? '<button type="button" class="button" data-swipe="find-clip">' + icon('film') + ' Find a source clip</button><p class="reel-video-message" role="status"></p>' : ''}
+        ${clip ? clipCredit(clip) : canFindClip(card) ? '<button type="button" class="button" data-swipe="find-clip">' + icon('film') + ' Find a source clip</button><p class="reel-video-message" role="status"></p>' : ''}
       </div>
       <p class="concept">${esc(card.kicker)}</p><p class="idea-text">${esc(card.intro)}</p>
       ${card.example ? '<div class="example">' + icon('spark') + '<span><strong>Try it.</strong> ' + esc(card.example) + '</span></div>' : ''}
       <p class="source-line">${esc(card.source.byline)} · <a href="${esc(card.source.url)}" target="_blank" rel="noopener noreferrer">${esc(card.source.title)} ${icon('external')}</a>${cclink}</p>
+      ${evidenceDetails(card, esc)}
       <div class="button-row">
         ${'speechSynthesis' in window ? '<button type="button" class="button" data-swipe="listen">' + icon('volume') + ' Listen</button>' : ''}
         <button type="button" class="button primary" data-swipe="learn-sheet"></button>
@@ -432,7 +504,6 @@ export function mountSwipe(root, options) {
     activeClipRequest?.abort();
     sheet.showModal();
     refreshSheet(card);
-    if (clip) attachClip(clip, play);
   }
 
   function refreshSheet(card) {
@@ -463,7 +534,8 @@ export function mountSwipe(root, options) {
       }
       clips.set(card.id, clip);
       if (active?.card?.id === card.id) offerClip(active, clip);
-      attachClip(clip, false);
+      sheet.querySelector('[data-reel-media]').innerHTML = clipCredit(clip)
+        + '<p class="reel-video-message" role="status">Clip added to the feed card.</p>';
     } catch {
       status.textContent = 'The clip source could not be reached. Try again in a moment.';
     } finally {
@@ -492,7 +564,6 @@ export function mountSwipe(root, options) {
 
   function closeSheet() {
     clipRequest?.abort();
-    sheet.querySelector('video')?.pause();
     window.speechSynthesis?.cancel();
     sheet.replaceChildren();
   }
@@ -520,9 +591,12 @@ export function mountSwipe(root, options) {
         nextScene(entry, ((beats.get(card.id) || 0) + 1) % story.beats.length);
       } else if (action === 'pause') {
         paused = !paused;
+        if (paused) inlinePlayer?.video.pause();
         reflect();
-      } else if (action === 'read' || action === 'clip') {
-        openSheet(entry, action === 'clip');
+      } else if (action === 'read') {
+        openSheet(entry);
+      } else if (action === 'clip') {
+        toggleClip(entry);
       } else if (action === 'close') {
         sheet.close();
       } else if (action === 'find-clip') {
@@ -555,6 +629,7 @@ export function mountSwipe(root, options) {
   sheet.addEventListener('click', handle);
   sheet.addEventListener('close', closeSheet);
   document.addEventListener('keydown', onKey);
+  document.addEventListener('visibilitychange', pauseHiddenPlayer);
   motion.addEventListener?.('change', onMotion);
   const clock = setInterval(() => tick(performance.now()), 150);
 
@@ -587,6 +662,8 @@ export function mountSwipe(root, options) {
       track.removeEventListener('scroll', onScroll);
       root.removeEventListener('click', handle);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('visibilitychange', pauseHiddenPlayer);
+      releasePlayer();
       motion.removeEventListener?.('change', onMotion);
       if (sheet.open) sheet.close();
       closeSheet();

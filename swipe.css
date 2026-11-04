@@ -174,3 +174,26 @@
 @media (prefers-reduced-motion: reduce) {
   .reel.is-active .art-drift, .reel.is-active .art-flow, .reel.is-active .art-signal { animation: none; }
 }
+
+.reel-illustration { position: absolute; inset: 0; display: grid; place-items: center; }
+.reel-inline { position: absolute; inset: 6px 0; display: grid; place-items: center; pointer-events: none; }
+.reel-inline-video {
+  width: 100%; max-height: calc(100% - 22px); aspect-ratio: 16 / 9; display: block;
+  object-fit: contain; border-radius: 12px; background: #0a141b;
+  border: 1px solid #ffffff2e; opacity: 0; pointer-events: none;
+}
+.has-inline-video .reel-inline-video { opacity: 1; pointer-events: auto; }
+.has-inline-video .reel-illustration { visibility: hidden; }
+.reel-inline-credit {
+  position: absolute; inset: auto 3px 0; width: fit-content; max-width: 95%;
+  color: #f5f5e9; background: #101a23df; border-radius: 5px;
+  padding: 1px 5px; font-size: .62rem; text-decoration: none; opacity: 0; pointer-events: none;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.has-inline-video .reel-inline-credit { opacity: 1; pointer-events: auto; }
+.reel-inline-credit .icon { width: 12px; height: 12px; }
+.reel-inline-status:not(:empty) {
+  position: absolute; bottom: 0; padding: 5px 8px; border-radius: 6px;
+  font-size: .71rem; color: #f4f4e7; background: #131c27; pointer-events: auto;
+}
+.reel-inline-status a { color: inherit; }

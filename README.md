@@ -8,8 +8,8 @@ Serve the repository root over HTTP, for example with `python3 -m http.server 80
 
 ## How it works
 
-- **Feed** opens with the daily reading and continues through authored ideas and fresh, deduplicated entries from Simple English Wikipedia. Scroll, swipe, use the up/down keys, or tap the arrows. You control when to advance, and can pause scene progression or reveal a scene early. Reduced-motion preferences start scene progression paused.
-- Illustrations are drawn in the browser from reusable SVG scenes. The app embeds credited NASA Scientific Visualization Studio clips on related cards and checks for freely reusable Wikimedia Commons videos attached to sourced articles. Clips load when opened. Audio narration, where available, comes from the device's speech engine.
+- **Feed** opens with a video card and continues through original research stories, a daily reading, and deduplicated entries from Simple English Wikipedia. Behind the story notes distinguish observations, interpretations, and what remains open. Scroll, swipe, use the up/down keys, or tap the arrows. You control when to advance, and can pause scene progression or reveal a scene early. Reduced-motion preferences start scene progression paused.
+- Illustrations are drawn in the browser from reusable SVG scenes. The app embeds credited NASA Scientific Visualization Studio clips on related cards and checks for freely reusable Wikimedia Commons videos attached to sourced articles. Only the active card loads and plays its clip. Clips start muted when autoplay is allowed and have manual playback controls. Audio narration, where available, comes from the device's speech engine.
 - After five ideas, an optional recall prompt offers a place to pause or continue. Saving an idea and marking it as learned remain separate actions.
 
 - The app picks an idea for your device’s local calendar date on opening and checks for a new day when you come back. It rotates topics and retrieves public encyclopedia entries from Simple English Wikipedia. It also includes original editorial cards, some based on books and research. Live entries are clearly labeled and link to their original articles.
@@ -23,3 +23,8 @@ Serve the repository root over HTTP, for example with `python3 -m http.server 80
 `learning.js` is browser- and DOM-independent. It defines the card and review model, local-day helpers, recall scheduling, and a versioned backup format. `feed.js` produces that same card shape. The UI and storage adapter live in `app.js`, so an eventual lifestyle app can reuse the content and review rules with its own storage and home screen.
 
 See individual card source links for attribution. Excerpts from Simple English Wikipedia are available under CC BY-SA 4.0.
+
+### Bundled video credits
+
+- [Beluga at Oceanogràfic Valencia](https://commons.wikimedia.org/wiki/File:Beluga_Oceanografic.webm) by Toniher, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The bundled excerpt has been trimmed and re-encoded without audio under the same license. It is illustrative footage.
+- [Octopus–fish hunting group, Supplementary Video 1](https://pmc.ncbi.nlm.nih.gov/articles/PMC11541198/) by Eduardo Sampaio and colleagues, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The bundled research-footage excerpt has been trimmed and re-encoded without audio.

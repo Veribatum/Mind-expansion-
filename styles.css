@@ -300,3 +300,12 @@ h1 { margin-top: 6px; font-size: clamp(2.65rem, 5.7vw, 4.55rem); font-weight: 50
   border-radius: 8px; background: #f5e6cd; color: #593c24; font-size: .8rem;
 }
 body:has(.detail[open]) .notice { z-index: 7; }
+
+.evidence-notes {
+  margin-top: 14px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+  background: #f0f0e3; color: var(--muted); font-size: .8rem;
+}
+.evidence-notes summary { color: var(--ink); cursor: pointer; font-weight: 720; }
+.evidence-notes p, .evidence-notes ul { margin: 7px 0 0; }
+.evidence-notes ul { padding-left: 20px; }
+.evidence-notes a { color: var(--ink); text-underline-offset: 2px; }

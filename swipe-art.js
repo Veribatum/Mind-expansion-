@@ -1,3 +1,5 @@
+import { DEEP_ART } from './deep-art.js?v=3';
+
 const PLANE = 'M200 51c-9 0-13 17-16 40l-9 69-88 49v18l85-22 9 56-35 21v14l54-12 54 12v-14l-35-21 9-56 85 22v-18l-88-49-9-69c-3-23-7-40-16-40Z';
 
 function plane(beat) {
@@ -104,7 +106,7 @@ function orbit(beat) {
   </g>`;
 }
 
-const ART = { plane, memory, habit, metric, clock, moon, ocean, network, lens, orbit };
+const ART = { plane, memory, habit, metric, clock, moon, ocean, network, lens, orbit, ...DEEP_ART };
 
 export function storyArt(kind, beat) {
   return `<svg viewBox="0 0 400 355" class="story-art" aria-hidden="true">

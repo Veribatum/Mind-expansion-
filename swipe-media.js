@@ -1,9 +1,27 @@
-import { normalize } from './learning.js';
+import { normalize } from './learning.js?v=3';
 
 const SVS = 'https://svs.gsfc.nasa.gov';
 const NASA_CREDIT = 'NASA Scientific Visualization Studio';
 const PUBLIC_DOMAIN = SVS + '/help/';
-const NASA = {
+const FEATURED_CLIPS = {
+  'beluga-half-sleep': {
+    title: 'Beluga swimming at Oceanogràfic Valencia',
+    url: './media/beluga.mp4',
+    page: 'https://commons.wikimedia.org/wiki/File:Beluga_Oceanografic.webm',
+    credit: 'Toniher · Wikimedia Commons',
+    license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    note: 'Illustrative footage · trimmed and re-encoded without audio',
+    local: true,
+  },
+  'octopus-hunting-team': {
+    title: 'Octopus and fish hunting together in the Red Sea',
+    url: './media/octopus-hunt.mp4',
+    page: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11541198/',
+    credit: 'Eduardo Sampaio and colleagues · Supplementary Video 1',
+    license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    note: 'Research footage · trimmed and re-encoded without audio',
+    local: true,
+  },
   'lunar-phases': {
     title: 'Moon Phases Loop', page: SVS + '/4310/',
     url: SVS + '/vis/a000000/a004300/a004310/moon_720p30.mp4', credit: NASA_CREDIT + ' · Ernie Wright',
@@ -18,6 +36,8 @@ const NASA = {
 };
 
 const CONCEPTS = {
+  'beluga whale': 'beluga-half-sleep', 'beluga': 'beluga-half-sleep',
+  'day octopus': 'octopus-hunting-team', 'octopus cyanea': 'octopus-hunting-team',
   'lunar phase': 'lunar-phases', 'lunar phases': 'lunar-phases',
   'phase of the moon': 'lunar-phases', 'phases of the moon': 'lunar-phases',
   'moon phase': 'lunar-phases', 'moon phases': 'lunar-phases',
@@ -26,8 +46,8 @@ const CONCEPTS = {
 };
 
 export function featuredClip(card) {
-  const id = Object.hasOwn(NASA, card.id) ? card.id : CONCEPTS[normalize(card.title)];
-  return Object.hasOwn(NASA, id) ? NASA[id] : null;
+  const id = Object.hasOwn(FEATURED_CLIPS, card.id) ? card.id : CONCEPTS[normalize(card.title)];
+  return Object.hasOwn(FEATURED_CLIPS, id) ? FEATURED_CLIPS[id] : null;
 }
 
 export function canFindClip(card) {

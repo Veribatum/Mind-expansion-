@@ -6,6 +6,9 @@ export const TOPICS = {
   systems: 'Systems & society',
   science: 'Science & nature',
   practice: 'Learning & practice',
+  animals: 'Animal behavior',
+  culture: 'Society & culture',
+  mysteries: 'Strange & unresolved',
 };
 
 export function dayKey(date = new Date()) {
@@ -83,7 +86,8 @@ export function matches(record, query) {
   const { card } = record;
   const haystack = normalize([
     card.title, card.kicker, TOPICS[card.topic], card.intro, card.example, card.prompt,
-    card.answer, card.source.title, card.source.byline, card.tags.join(' '), record.note,
+    card.answer, card.context, card.source.title, card.source.byline, card.tags.join(' '), record.note,
+    ...(card.related || []).flatMap(source => [source.title, source.byline]),
   ].join(' '));
   return normalize(query).split(' ').every(term => haystack.includes(term));
 }
@@ -107,6 +111,10 @@ function httpsUrl(value) {
   }
 }
 
+function validSource(source) {
+  return !!source && httpsUrl(source.url) && nonempty(source.title, 240) && stringWithin(source.byline, 240);
+}
+
 export function validCard(card) {
   return !!card && safeId(card.id) && Object.hasOwn(TOPICS, card.topic)
     && nonempty(card.title, 160) && stringWithin(card.kicker, 180)
@@ -115,8 +123,10 @@ export function validCard(card) {
     && Array.isArray(card.tags) && card.tags.length <= 30
     && card.tags.every(tag => nonempty(tag, 160))
     && ['book', 'research', 'essay', 'encyclopedia'].includes(card.kind)
-    && !!card.source && httpsUrl(card.source.url)
-    && nonempty(card.source.title, 240) && stringWithin(card.source.byline, 240);
+    && validSource(card.source)
+    && (card.context === undefined || stringWithin(card.context, 1200))
+    && (card.related === undefined || (Array.isArray(card.related)
+      && card.related.length <= 5 && card.related.every(validSource)));
 }
 
 export function decodeState(value) {

@@ -1,10 +1,11 @@
 import {
   TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, learn, matches, mergeState,
   newRecord, newState, rate, reviewDate, validCard,
-} from './learning.js';
-import { selectIdea } from './feed.js?v=2';
-import { mountSwipe } from './swipe.js';
-import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js';
+} from './learning.js?v=3';
+import { selectIdea } from './feed.js?v=3';
+import { mountSwipe } from './swipe.js?v=3';
+import { evidenceDetails } from './evidence.js?v=3';
+import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=3';
 
 const ROUTES = ['feed', 'today', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
@@ -152,7 +153,7 @@ function reading(card) {
   return `<p class="concept">${escape(card.kicker)}</p>
     <p class="idea-text">${escape(card.intro)}</p>
     ${card.example ? `<div class="example">${icon('spark')}<span><strong>Try it.</strong> ${escape(card.example)}</span></div>` : ''}
-    ${sourceLine(card)}`;
+    ${sourceLine(card)}${evidenceDetails(card, escape)}`;
 }
 
 function saveButton(card, record) {
@@ -176,7 +177,7 @@ function todayView() {
   const due = dueRecords(state, today).length;
   const learned = Object.values(state.records).filter(record => record.learned).length;
   const dashboard = `<section class="dashboard" aria-label="Your learning">
-    ${stat('feed', 'feed', 'Swipe through ideas', 'Animations and source clips')}
+    ${stat('feed', 'feed', 'Swipe through ideas', 'Animal research, mysteries and more')}
     ${stat('review', 'review', due ? `${due} due for review` : 'Review queue', due ? 'Try a quick recall' : 'You’re caught up')}
     ${stat('library', 'library', 'Your library', `${learned} ${learned === 1 ? 'idea' : 'ideas'} learned`)}
     </section>`;

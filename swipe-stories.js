@@ -1,5 +1,6 @@
 import { EDITORIAL } from './cards.js';
-import { dayNumber, normalize } from './learning.js';
+import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=3';
+import { dayNumber, normalize } from './learning.js?v=3';
 
 const make = (art, title, beats, accent) => ({ art, title, beats, accent });
 const ORIGINALS = {
@@ -110,6 +111,7 @@ ORIGINALS['ocean-eddies'] = make('ocean', 'The ocean moves in curls.', [
 const STYLE_BY_TOPIC = {
   mind: ['lens', 'violet'], thinking: ['lens', 'rose'], systems: ['network', 'amber'],
   science: ['orbit', 'blue'], practice: ['memory', 'mint'],
+  animals: ['lens', 'mint'], culture: ['crowd', 'amber'], mysteries: ['signal', 'blue'],
 };
 
 function sourceBeats(card) {
@@ -122,6 +124,7 @@ function sourceBeats(card) {
 }
 
 export function storyFor(card) {
+  if (Object.hasOwn(DEEP_STORIES, card.id)) return DEEP_STORIES[card.id];
   if (Object.hasOwn(ORIGINALS, card.id)) return ORIGINALS[card.id];
   const [art, accent] = STYLE_BY_TOPIC[card.topic];
   return make(art, card.title, sourceBeats(card), accent);
@@ -136,15 +139,22 @@ export function cardKey(card) {
 }
 
 export function openingCards(daily, pool, day) {
-  const byId = new Map([...EDITORIAL, ...FEATURED].map(card => [card.id, card]));
-  const featured = ['survivorship', 'lunar-phases', 'leverage-points', 'implementation-intentions',
-    'goodhart-target', 'ocean-eddies', 'finite-time', 'feynman-guess', 'spacing-effect',
-    'choice-architecture'].map(id => byId.get(id));
+  const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS].map(card => [card.id, card]));
+  const lead = ['beluga-half-sleep', 'lunar-phases', 'octopus-hunting-team', 'ocean-eddies'];
   const firstDay = dayNumber(day) - dayNumber('2026-11-04');
-  const offset = (firstDay % featured.length + featured.length) % featured.length;
-  const rotated = [...featured.slice(offset), ...featured.slice(0, offset)];
-  const candidates = [daily, ...rotated.slice(0, 4), ...pool.slice(0, 2), ...rotated.slice(4),
-    ...EDITORIAL, ...pool].filter(Boolean);
+  const leadId = lead[(firstDay % lead.length + lead.length) % lead.length];
+  const groups = [
+    ['cold-war-art', 'choice-blindness', 'octopus-hunting-team', 'wow-signal', 'pluralistic-ignorance'],
+    ['bee-ball-play', 'loftus-broken-glass', 'dyatlov-snow-slab', 'glassfrog-blood', 'baboon-peace-culture'],
+    ['spotlight-shirt', 'strasbourg-dancing', 'boundary-memory', 'lunar-phases', 'ocean-eddies'],
+  ];
+  const start = (firstDay % groups.length + groups.length) % groups.length;
+  const ordered = [...groups.slice(start), ...groups.slice(0, start)];
+  const candidates = [
+    byId.get(leadId), ...ordered[0].map(id => byId.get(id)), daily,
+    ...ordered[1].map(id => byId.get(id)), ...pool.slice(0, 2),
+    ...ordered[2].map(id => byId.get(id)), ...DEEP_CARDS, ...FEATURED, ...EDITORIAL, ...pool,
+  ].filter(Boolean);
   const ids = new Set();
   const keys = new Set();
   return candidates.filter(card => {

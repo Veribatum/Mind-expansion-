@@ -1,4 +1,4 @@
-import { decodeState, mergeState, newState, validCard } from './learning.js';
+import { decodeState, mergeState, newState, validCard } from './learning.js?v=3';
 
 const STATE_KEY = 'mind-expansion.state.v1';
 const POOL_KEY = 'mind-expansion.pool.v1';

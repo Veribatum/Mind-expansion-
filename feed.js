@@ -1,5 +1,6 @@
 import { EDITORIAL } from './cards.js';
-import { dayNumber, normalize, seenCards, validCard } from './learning.js';
+import { DEEP_CARDS } from './deep-cuts.js?v=3';
+import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=3';
 
 const WIKI = 'https://simple.wikipedia.org/w/api.php';
 const ROTATION = [
@@ -8,6 +9,9 @@ const ROTATION = [
   ['science', ['Ecology', 'Evolution', 'Astronomy', 'History of science', 'Physics', 'Geology', 'Biology']],
   ['systems', ['Economics', 'Sociology', 'Communication', 'Engineering', 'Computer science']],
   ['practice', ['Learning', 'Scientific method', 'Education', 'Linguistics', 'Research']],
+  ['animals', ['Animal behavior', 'Ethology', 'Primates', 'Cetaceans', 'Cephalopods', 'Insects']],
+  ['culture', ['Sociology', 'Social psychology', 'Cold War', 'Anthropology', 'Art movements']],
+  ['mysteries', ['Unexplained phenomena', 'Archaeology', 'Historical events', 'Astronomy']],
 ];
 
 function hash(value) {
@@ -120,7 +124,7 @@ export async function selectIdea({
   for (const card of [...Object.values(state.days), ...Object.values(state.records).map(r => r.card)]) {
     if (!card.id.startsWith('simple-wiki-') && card.kicker) seen.add(normalize(card.kicker));
   }
-  const editorial = EDITORIAL.filter(card => available(card, seen));
+  const editorial = [...EDITORIAL, ...DEEP_CARDS].filter(card => available(card, seen));
   const dayIndex = dayNumber(day);
   if (!seen.size && editorial.length) return { card: editorial[0], pool };
   if (dayIndex % 3 === 0 && editorial.length) {

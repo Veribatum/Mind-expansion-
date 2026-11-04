@@ -1,22 +1,30 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EDITORIAL } from '../cards.js';
+import { DEEP_CARDS } from '../deep-cuts.js';
+import { existsSync } from 'node:fs';
 import { exploreIdeas } from '../feed.js';
 import { validCard } from '../learning.js';
 import { storyArt } from '../swipe-art.js';
 import { discoverClip, featuredClip } from '../swipe-media.js';
 import { FEATURED, beatSeconds, cardKey, openingCards, storyFor } from '../swipe-stories.js';
 
-test('the daily idea stays first and the opening set mixes illustration, videos and live ideas', () => {
+test('the opening set starts on a playable card and mixes research, daily reading, and live ideas', () => {
   const daily = EDITORIAL[0];
   const live = { ...daily, id: 'simple-wiki-1', title: 'An unfamiliar live idea', kicker: 'Learning' };
   const deck = openingCards(daily, [live, daily], '2026-11-04');
-  assert.equal(deck[0], daily);
-  assert.equal(deck[1].id, 'survivorship');
-  assert.ok(featuredClip(deck[2]));
+  assert.equal(deck[0].id, 'beluga-half-sleep');
+  assert.equal(deck[1].id, 'cold-war-art');
+  assert.ok(deck.includes(daily));
+  assert.ok(featuredClip(deck[0]));
+  for (const id of ['beluga-half-sleep', 'octopus-hunting-team']) {
+    const clip = featuredClip(DEEP_CARDS.find(card => card.id === id));
+    assert.ok(existsSync(new URL(clip.url, new URL('..', import.meta.url))));
+    assert.match(clip.license, /^CC BY/);
+  }
   assert.ok(deck.includes(live));
   assert.equal(new Set(deck.map(cardKey)).size, deck.length);
-  for (const card of [...deck, ...FEATURED]) {
+  for (const card of [...deck, ...FEATURED, ...DEEP_CARDS]) {
     assert.ok(validCard(card));
     const story = storyFor(card);
     assert.ok(story.beats.length);
