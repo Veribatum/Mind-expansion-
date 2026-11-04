@@ -2,7 +2,7 @@ import { TOPICS, normalize } from './learning.js?v=3';
 import { exploreIdeas } from './feed.js?v=3';
 import { storyArt } from './swipe-art.js?v=3';
 import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=3';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=3';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=4';
 import { evidenceDetails } from './evidence.js?v=3';
 
 const SET_SIZE = 5;

@@ -3,7 +3,7 @@ import {
   newRecord, newState, rate, reviewDate, validCard,
 } from './learning.js?v=3';
 import { selectIdea } from './feed.js?v=3';
-import { mountSwipe } from './swipe.js?v=3';
+import { mountSwipe } from './swipe.js?v=4';
 import { evidenceDetails } from './evidence.js?v=3';
 import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=3';
 

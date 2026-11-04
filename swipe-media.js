@@ -15,7 +15,7 @@ const FEATURED_CLIPS = {
   },
   'octopus-hunting-team': {
     title: 'Octopus and fish hunting together in the Red Sea',
-    url: './media/octopus-hunt.mp4',
+    url: './media/octopus-hunt.mp4?v=2',
     page: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11541198/',
     credit: 'Eduardo Sampaio and colleagues · Supplementary Video 1',
     license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
