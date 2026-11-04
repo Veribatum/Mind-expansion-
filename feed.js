@@ -163,3 +163,29 @@ export async function selectIdea({
 function combinePool(fresh, pool) {
   return [...new Map([...fresh, ...pool].map(card => [card.id, card])).values()].slice(0, 120);
 }
+
+// Discovery uses the same source and quality filters as the daily edition.
+export async function exploreIdeas({ day, batch, seen, signal, fetcher = fetch }) {
+  const index = (dayNumber(day) + batch) % ROTATION.length;
+  const [topic, categories] = ROTATION[index];
+  const [otherTopic, otherCategories] = ROTATION[(index + 2) % ROTATION.length];
+  const slot = Math.floor((dayNumber(day) + batch) / ROTATION.length);
+  const candidates = await Promise.allSettled([
+    readPool(categories[slot % categories.length], topic, day + batch, seen, signal, fetcher),
+    readPool(otherCategories[(slot + batch) % otherCategories.length], otherTopic, day + batch, seen, signal, fetcher),
+  ]);
+  const sets = candidates.map(result => result.status === 'fulfilled' ? result.value : []);
+  const used = new Set(seen);
+  const cards = [];
+  for (let i = 0; i < 8; i++) {
+    for (const list of sets) {
+      const card = list[i];
+      if (!card || used.has(card.id) || used.has(normalize(card.title))) continue;
+      cards.push(card);
+      used.add(card.id);
+      used.add(normalize(card.title));
+      if (cards.length === 8) return cards;
+    }
+  }
+  return cards;
+}

@@ -1,7 +1,7 @@
-const CACHE = 'mind-expansion-shell-v1';
+const CACHE = 'mind-expansion-shell-v2';
 const SHELL = [
-  './', './index.html', './styles.css', './app.js', './learning.js', './cards.js',
-  './feed.js', './storage.js', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
+  './', './index.html', './styles.css', './app.js?v=2', './learning.js', './cards.js',
+  './feed.js?v=2', './storage.js', './swipe.js', './swipe.css', './swipe-stories.js', './swipe-art.js', './swipe-media.js', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
   './icon-192.png', './icon-512.png',
 ];
 

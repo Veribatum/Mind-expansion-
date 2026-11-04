@@ -1,12 +1,16 @@
 # Mind Expansion
 
-A daily reading and recall app. Start with one short, sourced idea, then use the recall queue to revisit what you’ve learned. Search the library by idea, topic, source, researcher, or a phrase from your notes.
+A daily reading and recall app with a swipeable discovery feed. Each idea has a short read, an illustrated story, or a credited source clip. The recall queue helps you revisit what you’ve learned. Search the library by idea, topic, source, researcher, or a phrase from your notes.
 
 ## Run it
 
 Serve the repository root over HTTP, for example with `python3 -m http.server 8000`. For GitHub Pages, select **Settings → Pages → Deploy from a branch → main → /(root)**. The app has no build step, backend, API key, or paid model. The service worker requires HTTPS outside localhost.
 
 ## How it works
+
+- **Feed** opens with the daily reading and continues through authored ideas and fresh, deduplicated entries from Simple English Wikipedia. Scroll, swipe, use the up/down keys, or tap the arrows. You control when to advance, and can pause scene progression or reveal a scene early. Reduced-motion preferences start scene progression paused.
+- Illustrations are drawn in the browser from reusable SVG scenes. The app embeds credited NASA Scientific Visualization Studio clips on related cards and checks for freely reusable Wikimedia Commons videos attached to sourced articles. Clips load when opened. Audio narration, where available, comes from the device's speech engine.
+- After five ideas, an optional recall prompt offers a place to pause or continue. Saving an idea and marking it as learned remain separate actions.
 
 - The app picks an idea for your device’s local calendar date on opening and checks for a new day when you come back. It rotates topics and retrieves public encyclopedia entries from Simple English Wikipedia. It also includes original editorial cards, some based on books and research. Live entries are clearly labeled and link to their original articles.
 - The app pins the selected idea for that date, skips topics you’ve already seen, and caches its public-source topic pools. If a source is temporarily unavailable, it can use an unused built-in card or cached article. If neither is available, it offers a retry.

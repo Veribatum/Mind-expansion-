@@ -2,10 +2,11 @@ import {
   TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, learn, matches, mergeState,
   newRecord, newState, rate, reviewDate, validCard,
 } from './learning.js';
-import { selectIdea } from './feed.js';
+import { selectIdea } from './feed.js?v=2';
+import { mountSwipe } from './swipe.js';
 import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js';
 
-const ROUTES = ['today', 'review', 'library', 'settings'];
+const ROUTES = ['feed', 'today', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
 const app = document.querySelector('#app');
 const main = document.querySelector('#main');
@@ -26,6 +27,9 @@ let search = '';
 let revealed = '';
 let practiceId = '';
 let noticeTimer;
+let swipe;
+let swipeDay;
+let swipeResume;
 
 async function saveChanges(changes) {
   try {
@@ -60,7 +64,7 @@ function acceptUpdates(incoming) {
 
 function currentRoute() {
   const hash = location.hash.slice(1);
-  return ROUTES.includes(hash) ? hash : 'today';
+  return ROUTES.includes(hash) ? hash : 'feed';
 }
 
 function go(view) {
@@ -172,6 +176,7 @@ function todayView() {
   const due = dueRecords(state, today).length;
   const learned = Object.values(state.records).filter(record => record.learned).length;
   const dashboard = `<section class="dashboard" aria-label="Your learning">
+    ${stat('feed', 'feed', 'Swipe through ideas', 'Animations and source clips')}
     ${stat('review', 'review', due ? `${due} due for review` : 'Review queue', due ? 'Try a quick recall' : 'You’re caught up')}
     ${stat('library', 'library', 'Your library', `${learned} ${learned === 1 ? 'idea' : 'ideas'} learned`)}
     </section>`;
@@ -261,14 +266,50 @@ function settingsView() {
       <section class="panel"><p class="eyebrow">Home screen</p><h2>Make it a daily stop</h2>
         <p>On iPhone, open this page in Safari, tap Share, then Add to Home Screen. On Android or desktop, use Install app or Add to Home screen in the browser menu when available.</p></section>
       <section class="panel"><p class="eyebrow">The daily edition</p><h2>Where ideas come from</h2>
-        <p>Mind Expansion mixes short original readings based on books and research with brief entries pulled from Simple English Wikipedia. Each card links to its source. Open the app on a new day for a fresh selection.</p></section>
+        <p>Mind Expansion mixes short original readings based on books and research with brief entries pulled from Simple English Wikipedia. Each card links to its source. The Feed adds illustrated scenes, credited clips where available, and more ideas as you scroll. Today keeps one reading set aside for the day.</p></section>
     </div>`;
+}
+
+function releaseSwipe() {
+  if (!swipe) return;
+  swipeResume = swipe.snapshot();
+  swipe.destroy();
+  swipe = null;
+}
+
+async function changeFeedRecord(card, action) {
+  await updateRecord(card, record => action === 'learn' ? learn(record, today) : {
+    ...record, saved: !record.saved, updatedAt: new Date().toISOString(),
+  });
+  const record = state.records[card.id];
+  if (storageOK) say(action === 'learn' ? 'Learned. Your first review is tomorrow.'
+    : record.saved ? 'Saved to your library.' : 'Bookmark removed.');
+}
+
+function rememberPool(cards) {
+  pool = [...new Map([...cards, ...pool].map(card => [card.id, card])).values()].slice(0, 120);
+  if (library) void library.writePool(pool).catch(() => {});
 }
 
 function render() {
   const views = { today: todayView, review: reviewView, library: libraryView, settings: settingsView };
-  app.innerHTML = (!storageOK ? '<p class="storage-warning">Browser storage is unavailable. Export a backup to keep any changes made here.</p>' : '') + views[route]();
-  app.setAttribute('aria-busy', route === 'today' && pendingDay === today ? 'true' : 'false');
+  app.classList.toggle('is-feed', route === 'feed');
+  if (route === 'feed') {
+    if (!swipe || swipeDay !== today) {
+      releaseSwipe();
+      swipeDay = today;
+      swipe = mountSwipe(app, {
+        day: today, icon, escape, onAction: changeFeedRecord, onPool: rememberPool,
+        getRecord: id => state.records[id], getDue: () => dueRecords(state, today).length,
+        resume: swipeResume,
+      });
+    }
+    swipe.update(state.days[today], pool, pendingDay === today || attemptedDay !== today);
+  } else {
+    releaseSwipe();
+    app.innerHTML = (!storageOK ? '<p class="storage-warning">Browser storage is unavailable. Export a backup to keep any changes made here.</p>' : '') + views[route]();
+  }
+  app.setAttribute('aria-busy', (route === 'today' || route === 'feed') && pendingDay === today ? 'true' : 'false');
   for (const link of document.querySelectorAll('[data-route]')) {
     if (link.dataset.route === route) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -278,7 +319,7 @@ function render() {
     badge.hidden = !count;
     badge.textContent = count;
   }
-  document.title = route === 'today' ? 'Mind Expansion' : route[0].toUpperCase() + route.slice(1) + ' · Mind Expansion';
+  document.title = (route === 'feed' || route === 'today') ? 'Mind Expansion' : route[0].toUpperCase() + route.slice(1) + ' · Mind Expansion';
 }
 
 async function ensureToday(retry = false) {
@@ -286,7 +327,7 @@ async function ensureToday(retry = false) {
   if (state.days[day] || pendingDay === day || (!retry && attemptedDay === day)) return;
   pendingDay = day;
   attemptedDay = day;
-  if (route === 'today') render();
+  if (route === 'today' || route === 'feed') render();
   try {
     const result = await selectIdea({ state, day, pool, allowNetwork: navigator.onLine });
     const { card } = result;
@@ -294,13 +335,12 @@ async function ensureToday(retry = false) {
       state.days[day] = card;
       await saveChanges({ records: {}, days: { [day]: card } });
     }
-    pool = result.pool;
-    if (pool.length && library) await library.writePool(pool).catch(() => {});
+    if (result.pool.length) rememberPool(result.pool);
   } catch {
     // The retry screen also covers a source that fails before returning a response.
   } finally {
     if (pendingDay === day) pendingDay = '';
-    if (today === day && route === 'today') render();
+    if (today === day && (route === 'today' || route === 'feed')) render();
   }
 }
 
@@ -479,7 +519,7 @@ app.addEventListener('change', async event => {
 });
 
 window.addEventListener('hashchange', () => {
-  route = currentRoute();
+  if (location.hash !== '#main') route = currentRoute();
   if (route !== 'review') {
     revealed = '';
     practiceId = '';

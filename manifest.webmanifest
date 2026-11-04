@@ -1,9 +1,9 @@
 {
   "name": "Mind Expansion",
   "short_name": "Mind Expansion",
-  "description": "One good idea a day, with recall and a searchable learning library.",
+  "description": "A discovery feed of short ideas, with recall and a searchable learning library.",
   "id": "./",
-  "start_url": "./#today",
+  "start_url": "./#feed",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f1e8",
