@@ -1,9 +1,10 @@
-import { TOPICS, normalize } from './learning.js?v=3';
-import { exploreIdeas } from './feed.js?v=3';
-import { storyArt } from './swipe-art.js?v=3';
-import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=3';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=4';
-import { evidenceDetails } from './evidence.js?v=3';
+import { TOPICS, normalize } from './learning.js?v=5';
+import { exploreIdeas } from './feed.js?v=5';
+import { storyArt } from './swipe-art.js?v=5';
+import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=5';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=5';
+import { evidenceDetails } from './evidence.js?v=5';
+import { lessonReading } from './lessons.js?v=5';
 
 const SET_SIZE = 5;
 const MAX_DECK = 120;
@@ -18,9 +19,9 @@ export function mountSwipe(root, options) {
   const blank = '<div class="reel-loading" role="status">Opening the feed…</div>';
   root.innerHTML = `<section class="reel-layout" aria-label="Mind Expansion feed">
     <aside class="reel-intro">
-      <p class="reel-eyebrow"><span></span> THE DISCOVERY FEED</p>
+      <p class="reel-eyebrow"><span></span> ONE IDEA, UNDERSTOOD</p>
       <h1>Good things<br>to know<span>.</span></h1>
-      <p class="reel-deck-text">The unconscious mind, strange animal behavior, real history, and mysteries with a paper trail.</p>
+      <p class="reel-deck-text">Learn the finding, understand the explanation, and see how the idea works in another situation.</p>
       <div class="reel-nav">
         ${arrow('prev', 'Previous idea')}${arrow('next', 'Next idea')}
         <span class="reel-position" data-position>Opening edition</span>
@@ -53,7 +54,7 @@ export function mountSwipe(root, options) {
   let clipTimer;
   let inlinePlayer;
   let emptyBatches = 0;
-  let paused = sameDay ? resume.paused : motion.matches;
+  let paused = sameDay ? resume.paused : true;
   let elapsed = 0;
   let frame = 0;
   let lastScroll = -1000;
@@ -73,24 +74,26 @@ export function mountSwipe(root, options) {
     element.setAttribute('aria-label', story.title);
     element.inert = true;
     element.innerHTML = `<div class="reel-top">
-      <div class="reel-steps" aria-label="Scenes">
-        ${story.beats.map((_, i) => `<button type="button" aria-label="Scene ${i + 1}" data-scene="${i}"><span></span></button>`).join('')}
+      <div class="reel-steps" aria-label="Lesson sections">
+        ${story.beats.map((_, i) => `<button type="button" aria-label="Section ${i + 1}: ${esc(story.beats[i][0])}" data-scene="${i}"><span></span></button>`).join('')}
       </div>
       <div class="reel-meta"><span class="reel-pill">${isDaily ? icon('sun') + ' DAILY IDEA' : esc(TOPICS[card.topic])}</span>
-        <span class="reel-format">${clip ? 'VIDEO ON CARD' : card.id.startsWith('simple-wiki-') ? 'FIELD NOTE' : 'MINI EXPLAINER'}</span>
+        <span class="reel-format">${card.id.startsWith('simple-wiki-') ? 'SOURCE LESSON' : 'SHORT LESSON'}</span>
         ${story.beats.length > 1 ? button('pause', 'Pause scenes', 'pause', 'data-pause') : ''}
       </div>
     </div>
     <div class="reel-art"><div class="reel-illustration" data-art></div>
       <div class="reel-inline" data-inline hidden></div></div>
     <div class="reel-copy">
+      <p class="reel-section-number" data-section-number></p>
       <p class="reel-kicker" data-kicker></p>
       <h2>${esc(story.title)}</h2>
       <p class="reel-caption" data-caption></p>
+      <p class="reel-remember" data-remember hidden></p>
       <div class="reel-buttons">
         ${story.beats.length > 1 ? '<button class="reel-primary" type="button" data-swipe="beat" data-beat></button>' : ''}
         ${clip ? playButton() : ''}
-        <button class="reel-text-button" type="button" data-swipe="read">${icon('library')} Read</button>
+        <button class="reel-text-button" type="button" data-swipe="read">${icon('library')} Full lesson</button>
       </div>
     </div>
     <div class="reel-footer">
@@ -179,16 +182,20 @@ export function mountSwipe(root, options) {
     beats.set(card.id, beat);
     element.querySelector('[data-art]').innerHTML = storyArt(story.art, beat);
     element.querySelector('[data-kicker]').textContent = label;
+    element.querySelector('[data-section-number]').textContent = (beat + 1) + ' OF ' + story.beats.length;
     element.querySelector('[data-caption]').textContent = text;
     element.querySelectorAll('[data-scene]').forEach((segment, i) => {
       if (i === beat) segment.setAttribute('aria-current', 'step');
       else segment.removeAttribute('aria-current');
       segment.firstElementChild.style.width = i < beat ? '100%' : '0%';
     });
+    const last = beat === story.beats.length - 1;
+    const remember = element.querySelector('[data-remember]');
+    remember.hidden = !last || !card.lesson;
+    remember.innerHTML = last && card.lesson ? '<strong>Remember</strong> ' + esc(card.lesson.takeaway) : '';
     const next = element.querySelector('[data-beat]');
     if (next) {
-      const label = beat === story.beats.length - 1 ? 'Replay' : beat === 0 ? 'Reveal' : 'Next scene';
-      next.innerHTML = label + ' ' + icon(label === 'Replay' ? 'review' : 'arrow');
+      next.innerHTML = (last ? 'Check understanding' : 'Continue') + ' ' + icon(last ? 'review' : 'arrow');
     }
   }
 
@@ -215,8 +222,8 @@ export function mountSwipe(root, options) {
     learn.disabled = !!record?.learned;
     if (pause) {
       pause.innerHTML = icon(paused ? 'play' : 'pause');
-      pause.setAttribute('aria-label', paused ? 'Play scenes' : 'Pause scenes');
-      pause.title = paused ? 'Play scenes' : 'Pause scenes';
+      pause.setAttribute('aria-label', paused ? 'Auto-advance sections' : 'Pause sections');
+      pause.title = paused ? 'Auto-advance sections' : 'Pause sections';
     }
   }
 
@@ -401,7 +408,7 @@ export function mountSwipe(root, options) {
       updatePlayer(player);
     });
     video.src = clip.url;
-    if (!paused && !motion.matches && !document.hidden && !sheet.open
+    if (!motion.matches && !document.hidden && !sheet.open
       && !navigator.connection?.saveData && (clip.local || navigator.onLine)) {
       void video.play().catch(() => {});
     }
@@ -492,7 +499,7 @@ export function mountSwipe(root, options) {
       <div data-reel-media>
         ${clip ? clipCredit(clip) : canFindClip(card) ? '<button type="button" class="button" data-swipe="find-clip">' + icon('film') + ' Find a source clip</button><p class="reel-video-message" role="status"></p>' : ''}
       </div>
-      <p class="concept">${esc(card.kicker)}</p><p class="idea-text">${esc(card.intro)}</p>
+      <p class="concept">${esc(card.kicker)}</p>${lessonReading(card, esc)}
       ${card.example ? '<div class="example">' + icon('spark') + '<span><strong>Try it.</strong> ' + esc(card.example) + '</span></div>' : ''}
       <p class="source-line">${esc(card.source.byline)} · <a href="${esc(card.source.url)}" target="_blank" rel="noopener noreferrer">${esc(card.source.title)} ${icon('external')}</a>${cclink}</p>
       ${evidenceDetails(card, esc)}
@@ -502,7 +509,26 @@ export function mountSwipe(root, options) {
         <button type="button" class="button" data-swipe="save-sheet" aria-pressed="false"></button>
       </div>`;
     activeClipRequest?.abort();
-    sheet.showModal();
+    if (!sheet.open) sheet.showModal();
+    refreshSheet(card);
+  }
+
+  function openCheck(entry) {
+    const { card } = entry;
+    inlinePlayer?.video.pause();
+    sheet.dataset.idea = card.id;
+    sheet.innerHTML = `<div class="dialog-top"><p class="eyebrow">CHECK YOUR UNDERSTANDING</p>
+      <button type="button" class="icon-button" data-swipe="close" aria-label="Close check" autofocus>${icon('close')}</button></div>
+      <h2 id="reel-sheet-title">${esc(card.prompt)}</h2>
+      <p class="idea-text">Explain it in your own words before comparing with the answer.</p>
+      <div class="button-row"><button type="button" class="button primary" data-swipe="check-answer">Compare answer</button></div>
+      <div class="lesson-check-answer" data-lesson-answer hidden><p>${esc(card.answer)}</p></div>
+      <div class="button-row" data-check-actions hidden>
+        <button type="button" class="button primary" data-swipe="learn-sheet"></button>
+        <button type="button" class="button" data-swipe="save-sheet" aria-pressed="false"></button>
+        <button type="button" class="button" data-swipe="read">Read the lesson again</button>
+      </div>`;
+    if (!sheet.open) sheet.showModal();
     refreshSheet(card);
   }
 
@@ -588,11 +614,18 @@ export function mountSwipe(root, options) {
       if (control.hasAttribute('data-scene')) {
         nextScene(entry, Number(control.dataset.scene));
       } else if (action === 'beat') {
-        nextScene(entry, ((beats.get(card.id) || 0) + 1) % story.beats.length);
+        const current = beats.get(card.id) || 0;
+        if (current === story.beats.length - 1) openCheck(entry);
+        else nextScene(entry, current + 1);
       } else if (action === 'pause') {
         paused = !paused;
         if (paused) inlinePlayer?.video.pause();
         reflect();
+      } else if (action === 'check-answer') {
+        sheet.querySelector('[data-lesson-answer]').hidden = false;
+        sheet.querySelector('[data-check-actions]').hidden = false;
+        control.hidden = true;
+        sheet.querySelector('[data-swipe="learn-sheet"]').focus();
       } else if (action === 'read') {
         openSheet(entry);
       } else if (action === 'clip') {

@@ -1,6 +1,7 @@
-import { EDITORIAL } from './cards.js';
-import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=3';
-import { dayNumber, normalize } from './learning.js?v=3';
+import { EDITORIAL } from './cards.js?v=5';
+import { authoredLesson, isLesson } from './lessons.js?v=5';
+import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=5';
+import { dayNumber, normalize } from './learning.js?v=5';
 
 const make = (art, title, beats, accent) => ({ art, title, beats, accent });
 const ORIGINALS = {
@@ -124,9 +125,13 @@ function sourceBeats(card) {
 }
 
 export function storyFor(card) {
-  if (Object.hasOwn(DEEP_STORIES, card.id)) return DEEP_STORIES[card.id];
-  if (Object.hasOwn(ORIGINALS, card.id)) return ORIGINALS[card.id];
+  const taught = authoredLesson(card);
+  const appearance = DEEP_STORIES[card.id] || ORIGINALS[card.id];
   const [art, accent] = STYLE_BY_TOPIC[card.topic];
+  if (taught.lesson) {
+    return make(appearance?.art || art, taught.title,
+      taught.lesson.steps.map(step => [step.label, step.text]), appearance?.accent || accent);
+  }
   return make(art, card.title, sourceBeats(card), accent);
 }
 
@@ -140,11 +145,11 @@ export function cardKey(card) {
 
 export function openingCards(daily, pool, day) {
   const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS].map(card => [card.id, card]));
-  const lead = ['beluga-half-sleep', 'lunar-phases', 'octopus-hunting-team', 'ocean-eddies'];
-  const firstDay = dayNumber(day) - dayNumber('2026-11-04');
+  const lead = ['choice-blindness', 'pluralistic-ignorance', 'beluga-half-sleep', 'octopus-hunting-team'];
+  const firstDay = dayNumber(day) - dayNumber('2026-11-05');
   const leadId = lead[(firstDay % lead.length + lead.length) % lead.length];
   const groups = [
-    ['cold-war-art', 'choice-blindness', 'octopus-hunting-team', 'wow-signal', 'pluralistic-ignorance'],
+    ['pluralistic-ignorance', 'beluga-half-sleep', 'loftus-broken-glass', 'octopus-hunting-team', 'cold-war-art'],
     ['bee-ball-play', 'loftus-broken-glass', 'dyatlov-snow-slab', 'glassfrog-blood', 'baboon-peace-culture'],
     ['spotlight-shirt', 'strasbourg-dancing', 'boundary-memory', 'lunar-phases', 'ocean-eddies'],
   ];
@@ -152,9 +157,9 @@ export function openingCards(daily, pool, day) {
   const ordered = [...groups.slice(start), ...groups.slice(0, start)];
   const candidates = [
     byId.get(leadId), ...ordered[0].map(id => byId.get(id)), daily,
-    ...ordered[1].map(id => byId.get(id)), ...pool.slice(0, 2),
-    ...ordered[2].map(id => byId.get(id)), ...DEEP_CARDS, ...FEATURED, ...EDITORIAL, ...pool,
-  ].filter(Boolean);
+    ...ordered[1].map(id => byId.get(id)), ...pool.filter(isLesson).slice(0, 2),
+    ...ordered[2].map(id => byId.get(id)), ...DEEP_CARDS, ...FEATURED, ...EDITORIAL, ...pool.filter(isLesson),
+  ].filter(Boolean).map(authoredLesson).filter(isLesson);
   const ids = new Set();
   const keys = new Set();
   return candidates.filter(card => {

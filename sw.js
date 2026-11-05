@@ -1,8 +1,8 @@
-const CACHE = 'mind-expansion-shell-v4';
+const CACHE = 'mind-expansion-shell-v5';
 const SHELL = [
-  './', './index.html', './styles.css?v=3', './app.js?v=4', './learning.js?v=3', './cards.js',
-  './feed.js?v=3', './storage.js?v=3', './swipe.js?v=4', './swipe.css?v=3', './swipe-stories.js?v=3', './swipe-art.js?v=3', './swipe-media.js?v=4', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
-  './icon-192.png', './icon-512.png', './evidence.js?v=3', './deep-cuts.js?v=3', './deep-art.js?v=3',
+  './', './index.html', './styles.css?v=5', './app.js?v=5', './learning.js?v=5', './cards.js?v=5',
+  './feed.js?v=5', './storage.js?v=5', './swipe.js?v=5', './swipe.css?v=5', './swipe-stories.js?v=5', './swipe-art.js?v=5', './swipe-media.js?v=5', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
+  './icon-192.png', './icon-512.png', './evidence.js?v=5', './deep-cuts.js?v=5', './deep-art.js?v=5', './lessons.js?v=5', './source-lessons.js?v=5',
 ];
 
 self.addEventListener('install', event => {

@@ -1,3 +1,5 @@
+import { applyLesson } from './lessons.js?v=5';
+
 const source = (title, byline, url) => ({ title, byline, url });
 
 const CUTS = [
@@ -224,7 +226,7 @@ const CUTS = [
   },
 ];
 
-export const DEEP_CARDS = CUTS.map(({ art, accent, beats, ...card }) => ({
+export const DEEP_CARDS = CUTS.map(({ art, accent, beats, ...card }) => applyLesson({
   example: '', ...card,
 }));
 

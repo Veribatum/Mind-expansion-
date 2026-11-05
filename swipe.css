@@ -197,3 +197,25 @@
   font-size: .71rem; color: #f4f4e7; background: #131c27; pointer-events: auto;
 }
 .reel-inline-status a { color: inherit; }
+
+.reel h2 { font-size: clamp(1.7rem, 3vw, 2.35rem); line-height: 1.08; text-wrap: initial; }
+.reel-art { max-height: 255px; min-height: 74px; }
+.reel-section-number {
+  color: #f4f2e0b5; font-size: .61rem; letter-spacing: .13em; font-weight: 750; margin-bottom: 5px;
+}
+.reel-caption { font-size: .96rem; line-height: 1.5; max-height: 10.5em; }
+.reel-remember {
+  margin-top: 9px; padding: 8px 9px; border-left: 2px solid var(--glow); background: #ffffff10;
+  border-radius: 0 6px 6px 0; color: #fff9ed; font-size: .78rem; line-height: 1.4;
+}
+.reel-remember strong { display: block; color: var(--glow); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+.lesson-check-answer { margin-top: 16px; padding: 13px 15px; background: #e9eddc; border-radius: 8px; white-space: pre-line; }
+@media (max-width: 780px) {
+  .reel h2 { font-size: clamp(1.62rem, 6.7vw, 2.2rem); }
+  .reel-caption { font-size: .93rem; }
+  .reel-art { max-height: 210px; min-height: 54px; }
+}
+@media (max-height: 650px) {
+  .reel-art { min-height: 30px; }
+  .reel-caption { max-height: 8em; }
+}

@@ -86,7 +86,7 @@ export function matches(record, query) {
   const { card } = record;
   const haystack = normalize([
     card.title, card.kicker, TOPICS[card.topic], card.intro, card.example, card.prompt,
-    card.answer, card.context, card.source.title, card.source.byline, card.tags.join(' '), record.note,
+    card.answer, card.context, card.lesson?.takeaway, card.source.title, card.source.byline, card.tags.join(' '), record.note,
     ...(card.related || []).flatMap(source => [source.title, source.byline]),
   ].join(' '));
   return normalize(query).split(' ').every(term => haystack.includes(term));
@@ -115,6 +115,13 @@ function validSource(source) {
   return !!source && httpsUrl(source.url) && nonempty(source.title, 240) && stringWithin(source.byline, 240);
 }
 
+function validLesson(lesson) {
+  return !!lesson && nonempty(lesson.title, 160) && nonempty(lesson.takeaway, 650)
+    && nonempty(lesson.question, 600) && nonempty(lesson.answer, 1800)
+    && Array.isArray(lesson.steps) && lesson.steps.length >= 3 && lesson.steps.length <= 6
+    && lesson.steps.every(step => nonempty(step?.label, 90) && nonempty(step?.text, 900));
+}
+
 export function validCard(card) {
   return !!card && safeId(card.id) && Object.hasOwn(TOPICS, card.topic)
     && nonempty(card.title, 160) && stringWithin(card.kicker, 180)
@@ -124,6 +131,7 @@ export function validCard(card) {
     && card.tags.every(tag => nonempty(tag, 160))
     && ['book', 'research', 'essay', 'encyclopedia'].includes(card.kind)
     && validSource(card.source)
+    && (card.lesson === undefined || validLesson(card.lesson))
     && (card.context === undefined || stringWithin(card.context, 1200))
     && (card.related === undefined || (Array.isArray(card.related)
       && card.related.length <= 5 && card.related.every(validSource)));

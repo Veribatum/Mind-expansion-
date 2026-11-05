@@ -1,6 +1,8 @@
-import { EDITORIAL } from './cards.js';
-import { DEEP_CARDS } from './deep-cuts.js?v=3';
-import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=3';
+import { EDITORIAL } from './cards.js?v=5';
+import { DEEP_CARDS } from './deep-cuts.js?v=5';
+import { authoredLesson, isLesson } from './lessons.js?v=5';
+import { buildSourceLesson } from './source-lessons.js?v=5';
+import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=5';
 
 const WIKI = 'https://simple.wikipedia.org/w/api.php';
 const ROTATION = [
@@ -32,40 +34,16 @@ async function query(params, signal, fetcher) {
   return data.query || {};
 }
 
-function sentences(text) {
-  if (typeof Intl.Segmenter === 'function') {
-    return Array.from(new Intl.Segmenter('en', { granularity: 'sentence' }).segment(text),
-      part => part.segment.trim()).filter(Boolean);
-  }
-  return text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g)?.map(sentence => sentence.trim()) || [];
-}
-
 function toCard(page, topic, category) {
   if (!page?.extract || !page.fullurl || !page.pageid || page.missing
     || Object.hasOwn(page.pageprops || {}, 'disambiguation')) return null;
-
-  const clean = page.extract
-    .replace(/\{\\displaystyle[\s\S]*?\}/g, ' ')
-    .replace(/\[[\d, –-]+\]/g, '')
-    .replace(/\s+/g, ' ').trim();
-  if (/^(this (article|page)|the following is a list)|may refer to:/i.test(clean)) return null;
-
-  const lead = [];
-  for (const sentence of sentences(clean)) {
-    if (lead.length >= 4 || lead.join(' ').length + sentence.length > 720) break;
-    if (!/[.!?]["”)]?$/.test(sentence)) break;
-    lead.push(sentence);
-    if (lead.length >= 2 && lead.join(' ').length >= 330) break;
-  }
-  const intro = lead.join(' ');
-  if (intro.length < 115 || lead.length < 2 || /\\[a-z]+\b|[{}]|\b{{/i.test(intro)) return null;
-
+  const lesson = buildSourceLesson(page.title, page.extract);
+  if (!lesson) return null;
   const card = {
-    id: 'simple-wiki-' + page.pageid,
-    topic, kind: 'encyclopedia', title: page.title, kicker: category,
-    intro, example: '',
-    prompt: 'How would you explain “' + page.title + '” to someone hearing about it for the first time?',
-    answer: lead.slice(0, 2).join(' '),
+    id: 'simple-wiki-' + page.pageid, topic, kind: 'encyclopedia',
+    title: page.title, kicker: category,
+    intro: lesson.steps.map(item => item.text).join('\n\n'), example: '',
+    prompt: lesson.question, answer: lesson.answer, lesson,
     source: { title: page.title, byline: 'Simple English Wikipedia contributors', url: page.fullurl },
     tags: [category, page.title],
   };
@@ -105,7 +83,7 @@ async function readPool(category, topic, day, seen, signal, fetcher) {
   if (!pagesToFetch.length) return [];
   const data = await query({
     pageids: pagesToFetch.map(page => page.pageid).join('|'), prop: 'extracts|info|pageprops',
-    exintro: '1', explaintext: '1', exlimit: 'max', exchars: '950', inprop: 'url',
+    explaintext: '1', exlimit: 'max', exchars: '10000', exsectionformat: 'plain', inprop: 'url',
     ppprop: 'disambiguation',
   }, signal, fetcher);
   const results = new Map((data.pages || []).map(page => [page.pageid, page]));
@@ -124,7 +102,7 @@ export async function selectIdea({
   for (const card of [...Object.values(state.days), ...Object.values(state.records).map(r => r.card)]) {
     if (!card.id.startsWith('simple-wiki-') && card.kicker) seen.add(normalize(card.kicker));
   }
-  const editorial = [...EDITORIAL, ...DEEP_CARDS].filter(card => available(card, seen));
+  const editorial = [...EDITORIAL, ...DEEP_CARDS].map(authoredLesson).filter(card => available(card, seen));
   const dayIndex = dayNumber(day);
   if (!seen.size && editorial.length) return { card: editorial[0], pool };
   if (dayIndex % 3 === 0 && editorial.length) {
@@ -155,7 +133,7 @@ export async function selectIdea({
     }
   }
 
-  const stored = pool.filter(card => available(card, seen));
+  const stored = pool.filter(card => isLesson(card) && available(card, seen));
   const sameTopic = stored.filter(card => card.topic === topic);
   const candidates = sameTopic.length ? sameTopic : stored;
   return {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EDITORIAL } from '../cards.js';
+import { SOURCE_TEXT } from './fixture.js';
 import { DEEP_CARDS } from '../deep-cuts.js';
 import { selectIdea } from '../feed.js';
 import {
@@ -60,7 +61,7 @@ function wikiFetch(url) {
       pages: pages.filter(item => selected.includes(item.pageid)).map(item => ({
         ...item,
         fullurl: 'https://simple.wikipedia.org/wiki/Test_idea_' + item.pageid,
-        extract: 'This topic deals with an idea people can use in their everyday work. A good way to understand the idea is to explain a concrete example to someone else.',
+        extract: SOURCE_TEXT,
       })),
     },
   }));

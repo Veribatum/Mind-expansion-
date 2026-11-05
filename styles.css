@@ -309,3 +309,9 @@ body:has(.detail[open]) .notice { z-index: 7; }
 .evidence-notes p, .evidence-notes ul { margin: 7px 0 0; }
 .evidence-notes ul { padding-left: 20px; }
 .evidence-notes a { color: var(--ink); text-underline-offset: 2px; }
+
+.lesson-reading { display: grid; gap: 15px; margin-top: 14px; }
+.lesson-reading h3 { font: 750 .83rem/1.35 var(--sans); letter-spacing: 0; }
+.lesson-reading p { margin-top: 4px; font-size: .96rem; line-height: 1.65; }
+.lesson-takeaway { padding: 11px 13px; background: #e9eddc; border-left: 2px solid #8ba354; border-radius: 0 7px 7px 0; }
+.lesson-takeaway strong { display: block; font-size: .74rem; }

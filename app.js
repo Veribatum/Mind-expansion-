@@ -1,11 +1,12 @@
 import {
   TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, learn, matches, mergeState,
   newRecord, newState, rate, reviewDate, validCard,
-} from './learning.js?v=3';
-import { selectIdea } from './feed.js?v=3';
-import { mountSwipe } from './swipe.js?v=4';
-import { evidenceDetails } from './evidence.js?v=3';
-import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=3';
+} from './learning.js?v=5';
+import { selectIdea } from './feed.js?v=5';
+import { mountSwipe } from './swipe.js?v=5';
+import { evidenceDetails } from './evidence.js?v=5';
+import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=5';
+import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=5';
 
 const ROUTES = ['feed', 'today', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
@@ -59,7 +60,7 @@ async function updateRecord(card, update) {
 }
 
 function acceptUpdates(incoming) {
-  state = mergeState({ ...state, days: { ...state.days, ...incoming.days } }, incoming);
+  state = upgradeLessonState(mergeState({ ...state, days: { ...state.days, ...incoming.days } }, incoming));
   if (!dialog.open && document.activeElement?.id !== 'search') render();
 }
 
@@ -150,8 +151,9 @@ function sourceLine(card) {
 }
 
 function reading(card) {
+  card = authoredLesson(card);
   return `<p class="concept">${escape(card.kicker)}</p>
-    <p class="idea-text">${escape(card.intro)}</p>
+    ${lessonReading(card, escape)}
     ${card.example ? `<div class="example">${icon('spark')}<span><strong>Try it.</strong> ${escape(card.example)}</span></div>` : ''}
     ${sourceLine(card)}${evidenceDetails(card, escape)}`;
 }
@@ -331,7 +333,7 @@ async function ensureToday(retry = false) {
   if (route === 'today' || route === 'feed') render();
   try {
     const result = await selectIdea({ state, day, pool, allowNetwork: navigator.onLine });
-    const { card } = result;
+    const card = result.card ? authoredLesson(result.card) : null;
     if (card && !state.days[day]) {
       state.days[day] = card;
       await saveChanges({ records: {}, days: { [day]: card } });
@@ -553,15 +555,15 @@ if ('serviceWorker' in navigator) {
 async function start() {
   try {
     library = await openLibrary();
-    state = library.initial;
-    pool = library.pool;
+    state = upgradeLessonState(library.initial);
+    pool = library.pool.map(authoredLesson);
     if ('BroadcastChannel' in window) {
       channel = new BroadcastChannel('mind-expansion.library');
       channel.onmessage = event => acceptUpdates(event.data);
     }
   } catch {
     try {
-      state = readLocalState();
+      state = upgradeLessonState(readLocalState());
     } catch {
       storageOK = false;
     }

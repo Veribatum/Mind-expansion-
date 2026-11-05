@@ -8,7 +8,7 @@ Serve the repository root over HTTP, for example with `python3 -m http.server 80
 
 ## How it works
 
-- **Feed** opens with a video card and continues through original research stories, a daily reading, and deduplicated entries from Simple English Wikipedia. Behind the story notes distinguish observations, interpretations, and what remains open. Scroll, swipe, use the up/down keys, or tap the arrows. You control when to advance, and can pause scene progression or reveal a scene early. Reduced-motion preferences start scene progression paused.
+- **Feed** opens with an explained lesson and continues through research, practical ideas, and eligible source readings from Simple English Wikipedia. Behind the story notes distinguish observations, interpretations, and what remains open. Scroll, swipe, use the up/down keys, or tap the arrows. Sections advance on tap by default. You can turn on automatic progression. Reduced-motion preferences start scene progression paused.
 - Illustrations are drawn in the browser from reusable SVG scenes. The app embeds credited NASA Scientific Visualization Studio clips on related cards and checks for freely reusable Wikimedia Commons videos attached to sourced articles. Only the active card loads and plays its clip. Clips start muted when autoplay is allowed and have manual playback controls. Audio narration, where available, comes from the device's speech engine.
 - After five ideas, an optional recall prompt offers a place to pause or continue. Saving an idea and marking it as learned remain separate actions.
 
@@ -28,3 +28,7 @@ See individual card source links for attribution. Excerpts from Simple English W
 
 - [Beluga at Oceanogràfic Valencia](https://commons.wikimedia.org/wiki/File:Beluga_Oceanografic.webm) by Toniher, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The bundled excerpt has been trimmed and re-encoded without audio under the same license. It is illustrative footage.
 - [Octopus–fish hunting group, Supplementary Video 1](https://pmc.ncbi.nlm.nih.gov/articles/PMC11541198/) by Eduardo Sampaio and colleagues, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The bundled research-footage excerpt has been trimmed and re-encoded without audio.
+
+## Lesson content
+
+The feed opens each idea with a finding, follows the explanation through an example, and ends with a question about understanding. Reading sections advance on tap by default. Automatic source readings require an explanation and an example or research paragraph. Short encyclopedia leads are skipped. Rewritten archived lessons retain their saved notes and review history.
