@@ -42,7 +42,7 @@ export function newState() {
 export function newRecord(card) {
   return {
     card, saved: false, learned: null, due: null, step: 0, reviews: 0,
-    note: '', updatedAt: '',
+    note: '', updatedAt: '', feedback: 0,
   };
 }
 
@@ -146,6 +146,7 @@ export function decodeState(value) {
   const state = newState();
   for (const [id, record] of Object.entries(value.records)) {
     if (!validCard(record?.card) || id !== record.card.id || typeof record.saved !== 'boolean'
+      || !(record.feedback === undefined || [-1, 0, 1].includes(record.feedback))
       || !(record.learned === null || validDay(record.learned))
       || (record.learned ? !validDay(record.due) : record.due !== null)
       || !Number.isInteger(record.step) || record.step < 0 || record.step >= INTERVALS.length

@@ -1,18 +1,20 @@
-import { EDITORIAL } from './cards.js?v=5';
-import { DEEP_CARDS } from './deep-cuts.js?v=5';
-import { authoredLesson, isLesson } from './lessons.js?v=5';
-import { buildSourceLesson } from './source-lessons.js?v=5';
-import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=5';
+import { BOOK_STORIES } from './book-stories.js?v=6';
+import { discoveryOrder, rankCards } from './preferences.js?v=6';
+import { EDITORIAL } from './cards.js?v=6';
+import { DEEP_CARDS } from './deep-cuts.js?v=6';
+import { authoredLesson, isLesson } from './lessons.js?v=6';
+import { buildSourceLesson } from './source-lessons.js?v=6';
+import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=6';
 
 const WIKI = 'https://simple.wikipedia.org/w/api.php';
 const ROTATION = [
-  ['mind', ['Memory', 'Human behavior', 'Cognition', 'Social psychology', 'Psychology']],
+  ['mind', ['Communication', 'Motivation', 'Memory', 'Human behavior', 'Cognition', 'Social psychology', 'Psychology']],
   ['thinking', ['Logic', 'Critical thinking', 'Statistics', 'Philosophy', 'Probability']],
   ['science', ['Ecology', 'Evolution', 'Astronomy', 'History of science', 'Physics', 'Geology', 'Biology']],
   ['systems', ['Economics', 'Sociology', 'Communication', 'Engineering', 'Computer science']],
-  ['practice', ['Learning', 'Scientific method', 'Education', 'Linguistics', 'Research']],
+  ['practice', ['Self improvement', 'Habits', 'Learning', 'Scientific method', 'Education', 'Linguistics', 'Research']],
   ['animals', ['Animal behavior', 'Ethology', 'Primates', 'Cetaceans', 'Cephalopods', 'Insects']],
-  ['culture', ['Sociology', 'Social psychology', 'Cold War', 'Anthropology', 'Art movements']],
+  ['culture', ['History', 'World War II', 'Military history', 'Anthropology', 'Historical events']],
   ['mysteries', ['Unexplained phenomena', 'Archaeology', 'Historical events', 'Astronomy']],
 ];
 
@@ -102,30 +104,32 @@ export async function selectIdea({
   for (const card of [...Object.values(state.days), ...Object.values(state.records).map(r => r.card)]) {
     if (!card.id.startsWith('simple-wiki-') && card.kicker) seen.add(normalize(card.kicker));
   }
-  const editorial = [...EDITORIAL, ...DEEP_CARDS].map(authoredLesson).filter(card => available(card, seen));
+  const editorial = rankCards([...BOOK_STORIES, ...EDITORIAL, ...DEEP_CARDS].filter(card => card.id !== 'cold-war-art').map(authoredLesson).filter(card => available(card, seen)), state.records);
   const dayIndex = dayNumber(day);
+  const personalized = Object.values(state.records).some(r => r.feedback);
+  const pick = items => items[personalized ? 0 : dayIndex % items.length];
   if (!seen.size && editorial.length) return { card: editorial[0], pool };
   if (dayIndex % 3 === 0 && editorial.length) {
-    return { card: editorial[dayIndex % editorial.length], pool };
+    return { card: pick(editorial), pool };
   }
 
-  const rotationIndex = dayIndex % ROTATION.length;
-  const [topic, categories] = ROTATION[rotationIndex];
+  const rotations = discoveryOrder(ROTATION, state.records, dayIndex);
+  const [topic, categories] = rotations[0];
   const index = Math.floor(dayIndex / ROTATION.length) % categories.length;
   if (allowNetwork) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
-    const [otherTopic, otherCategories] = ROTATION[(rotationIndex + 1) % ROTATION.length];
+    const [otherTopic, otherCategories] = rotations[1];
     const lookup = (category, categoryTopic) => readPool(category, categoryTopic, day, seen,
       controller.signal, fetcher).catch(() => []);
     try {
       const primary = lookup(categories[index], topic);
       const alternate = lookup(otherCategories[Math.floor(dayIndex / 7) % otherCategories.length], otherTopic);
       const entries = await primary;
-      const card = entries.find(item => available(item, seen));
+      const card = rankCards(entries, state.records).find(item => available(item, seen));
       if (card) return { card, pool: combinePool(entries, pool) };
       const secondary = await alternate;
-      const secondCard = secondary.find(item => available(item, seen));
+      const secondCard = rankCards(secondary, state.records).find(item => available(item, seen));
       if (secondCard) return { card: secondCard, pool: combinePool(secondary, pool) };
     } finally {
       clearTimeout(timer);
@@ -135,9 +139,9 @@ export async function selectIdea({
 
   const stored = pool.filter(card => isLesson(card) && available(card, seen));
   const sameTopic = stored.filter(card => card.topic === topic);
-  const candidates = sameTopic.length ? sameTopic : stored;
+  const candidates = rankCards(sameTopic.length ? sameTopic : stored, state.records);
   return {
-    card: editorial[dayIndex % editorial.length] || candidates[dayIndex % candidates.length] || null,
+    card: pick(editorial) || pick(candidates) || null,
     pool,
   };
 }
@@ -147,10 +151,11 @@ function combinePool(fresh, pool) {
 }
 
 // Discovery uses the same source and quality filters as the daily edition.
-export async function exploreIdeas({ day, batch, seen, signal, fetcher = fetch }) {
+export async function exploreIdeas({ day, batch, seen, signal, records = {}, fetcher = fetch }) {
   const index = (dayNumber(day) + batch) % ROTATION.length;
-  const [topic, categories] = ROTATION[index];
-  const [otherTopic, otherCategories] = ROTATION[(index + 2) % ROTATION.length];
+  const rotations = discoveryOrder(ROTATION, records, dayNumber(day) + batch);
+  const [topic, categories] = rotations[0];
+  const [otherTopic, otherCategories] = rotations[2];
   const slot = Math.floor((dayNumber(day) + batch) / ROTATION.length);
   const candidates = await Promise.allSettled([
     readPool(categories[slot % categories.length], topic, day + batch, seen, signal, fetcher),
@@ -166,8 +171,8 @@ export async function exploreIdeas({ day, batch, seen, signal, fetcher = fetch }
       cards.push(card);
       used.add(card.id);
       used.add(normalize(card.title));
-      if (cards.length === 8) return cards;
+      if (cards.length === 8) return rankCards(cards, records);
     }
   }
-  return cards;
+  return rankCards(cards, records);
 }

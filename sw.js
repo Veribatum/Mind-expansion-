@@ -1,8 +1,8 @@
-const CACHE = 'mind-expansion-shell-v5';
+const CACHE = 'mind-expansion-shell-v6';
 const SHELL = [
-  './', './index.html', './styles.css?v=5', './app.js?v=5', './learning.js?v=5', './cards.js?v=5',
-  './feed.js?v=5', './storage.js?v=5', './swipe.js?v=5', './swipe.css?v=5', './swipe-stories.js?v=5', './swipe-art.js?v=5', './swipe-media.js?v=5', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
-  './icon-192.png', './icon-512.png', './evidence.js?v=5', './deep-cuts.js?v=5', './deep-art.js?v=5', './lessons.js?v=5', './source-lessons.js?v=5',
+  './book-stories.js?v=6', './preferences.js?v=6', './', './index.html', './styles.css?v=6', './app.js?v=6', './learning.js?v=6', './cards.js?v=6',
+  './feed.js?v=6', './storage.js?v=6', './swipe.js?v=6', './swipe.css?v=6', './swipe-stories.js?v=6', './swipe-art.js?v=6', './swipe-media.js?v=6', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
+  './icon-192.png', './icon-512.png', './evidence.js?v=6', './deep-cuts.js?v=6', './deep-art.js?v=6', './lessons.js?v=6', './source-lessons.js?v=6',
 ];
 
 self.addEventListener('install', event => {

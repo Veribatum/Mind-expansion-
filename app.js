@@ -1,12 +1,12 @@
 import {
   TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, learn, matches, mergeState,
   newRecord, newState, rate, reviewDate, validCard,
-} from './learning.js?v=5';
-import { selectIdea } from './feed.js?v=5';
-import { mountSwipe } from './swipe.js?v=5';
-import { evidenceDetails } from './evidence.js?v=5';
-import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=5';
-import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=5';
+} from './learning.js?v=6';
+import { selectIdea } from './feed.js?v=6';
+import { mountSwipe } from './swipe.js?v=6';
+import { evidenceDetails } from './evidence.js?v=6';
+import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=6';
+import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=6';
 
 const ROUTES = ['feed', 'today', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
@@ -103,7 +103,7 @@ function art(card) {
     thinking: { rx: 76, tilt: 24, figure: '03', dot: [190, 101], name: 'LOGIC / JUDGMENT' },
     systems: { rx: 42, tilt: 66, figure: '04', dot: [204, 117], name: 'SYSTEMS / SOCIETY' },
     science: { rx: 65, tilt: 43, figure: '05', dot: [190, 101], name: 'SCIENCE / NATURE' },
-  }[card.topic];
+  }[card.topic] || { rx: 58, tilt: 34, figure: '06', dot: [190, 101], name: 'FIELD / NOTES' };
   return `<div class="hero-art" aria-hidden="true">
     <div class="art-top"><span>MIND EXPANSION</span><span>FIG. ${pattern.figure}</span></div>
     <svg viewBox="0 0 320 330" fill="none">
@@ -179,7 +179,7 @@ function todayView() {
   const due = dueRecords(state, today).length;
   const learned = Object.values(state.records).filter(record => record.learned).length;
   const dashboard = `<section class="dashboard" aria-label="Your learning">
-    ${stat('feed', 'feed', 'Swipe through ideas', 'Animal research, mysteries and more')}
+    ${stat('feed', 'feed', 'Swipe through ideas', 'Book ideas, practical skills & surprising stories')}
     ${stat('review', 'review', due ? `${due} due for review` : 'Review queue', due ? 'Try a quick recall' : 'You’re caught up')}
     ${stat('library', 'library', 'Your library', `${learned} ${learned === 1 ? 'idea' : 'ideas'} learned`)}
     </section>`;
@@ -258,18 +258,37 @@ function libraryView() {
       </div></div><div id="library-results" aria-live="polite">${libraryResults()}</div>`;
 }
 
+function preferencesView() {
+  const ratings = Object.values(state.records).filter(record => record.feedback)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  return `<section class="panel preferences-panel"><p class="eyebrow">Make it yours</p><h2>Your feed, your interests</h2>
+    <p>Like an idea for more related subjects, authors and book ideas. Dislike hides that idea from future recommendations and reduces similar ones. New subjects still get a place in your feed. Ratings stay in this browser and are included in backups.</p>
+    ${ratings.length ? `<p class="preference-count">${ratings.filter(r => r.feedback === 1).length} liked · ${ratings.filter(r => r.feedback === -1).length} disliked</p>
+    <ul class="preference-list">${ratings.map(record => `<li><span><small>${record.feedback === 1 ? 'Liked' : 'Disliked'}</small>${escape(record.card.title)}</span>
+    <button type="button" class="button" data-undo-feedback="${record.card.id}" aria-label="Undo rating for ${escape(record.card.title)}">Undo</button></li>`).join('')}</ul>
+    <div class="button-row"><button type="button" class="button" data-reset-feedback>Reset all ratings</button></div>`
+    : '<p class="preference-count">No ratings yet. Use Like and Dislike on any feed card.</p>'}</section>`;
+}
+
+async function changeFeedback(card, value) {
+  await updateRecord(card, record => ({ ...record, feedback: value, updatedAt: new Date().toISOString() }));
+  if (storageOK) say(value === 1 ? 'Liked. More related ideas are coming up. Tap Like again to undo.'
+    : value === -1 ? 'Disliked. Fewer related ideas; this one stays out of future recommendations. Tap again to undo.'
+    : 'Rating removed. Your recommendations have been updated.');
+}
+
 function settingsView() {
   return heading('Your workspace', 'Settings', 'Keep your reading history portable.')
-    + `<div class="settings-grid">
+    + `<div class="settings-grid">${preferencesView()}
       <section class="panel"><p class="eyebrow">Your data</p><h2>Library backup</h2>
-        <p>Your ideas, notes and review progress live in this browser. Export them before switching devices or clearing browser data. Import merges the backup with what you already have.</p>
+        <p>Your ideas, notes, review progress and feed ratings live in this browser. Export them before switching devices or clearing browser data. Import merges the backup with what you already have.</p>
         <div class="button-row"><button type="button" class="button primary" data-export>${icon('download')} Export backup</button>
           <button type="button" class="button" data-import>${icon('upload')} Import backup</button>
           <input type="file" id="import-file" accept="application/json,.json" hidden></div></section>
       <section class="panel"><p class="eyebrow">Home screen</p><h2>Make it a daily stop</h2>
         <p>On iPhone, open this page in Safari, tap Share, then Add to Home Screen. On Android or desktop, use Install app or Add to Home screen in the browser menu when available.</p></section>
       <section class="panel"><p class="eyebrow">The daily edition</p><h2>Where ideas come from</h2>
-        <p>Mind Expansion mixes short original readings based on books and research with brief entries pulled from Simple English Wikipedia. Each card links to its source. The Feed adds illustrated scenes, credited clips where available, and more ideas as you scroll. Today keeps one reading set aside for the day.</p></section>
+        <p>Mind Expansion mixes practical lessons from books, negotiation and conversation skills, unusual history, and animal research. Each book idea is explained in original words with an example to try. More source lessons are discovered through Simple English Wikipedia when available. Each card links to its source. The Feed adds illustrated scenes, credited clips where available, and more ideas as you scroll. Today keeps one reading set aside for the day.</p></section>
     </div>`;
 }
 
@@ -303,7 +322,7 @@ function render() {
       swipeDay = today;
       swipe = mountSwipe(app, {
         day: today, icon, escape, onAction: changeFeedRecord, onPool: rememberPool,
-        getRecord: id => state.records[id], getDue: () => dueRecords(state, today).length,
+        getRecord: id => state.records[id], getRecords: () => state.records, onFeedback: changeFeedback, getDue: () => dueRecords(state, today).length,
         resume: swipeResume,
       });
     }
@@ -404,7 +423,20 @@ document.addEventListener('click', async event => {
   const button = event.target.closest('button');
   if (!button) return;
   const data = button.dataset;
-  if (data.retry !== undefined) {
+  if (data.undoFeedback) {
+    const card = state.records[data.undoFeedback]?.card;
+    if (card) await changeFeedback(card, 0);
+    render();
+  } else if (data.resetFeedback !== undefined) {
+    const changes = newState();
+    for (const record of Object.values(state.records)) {
+      if (record.feedback) changes.records[record.card.id] = { ...record, feedback: 0, updatedAt: new Date().toISOString() };
+    }
+    state = mergeState(state, changes);
+    await saveChanges(changes);
+    render();
+    say('All feed ratings reset. Your library and review progress are kept.');
+  } else if (data.retry !== undefined) {
     void ensureToday(true);
   } else if (data.learn || data.save) {
     const card = getCard(data.learn || data.save);

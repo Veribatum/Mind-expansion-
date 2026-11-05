@@ -14,8 +14,8 @@ test('the opening set contains complete lessons and preserves the daily reading'
   const daily = EDITORIAL[0];
   const live = { ...DEEP_CARDS[0], id: 'simple-wiki-1', title: 'An unfamiliar live idea', kicker: 'Learning' };
   const deck = openingCards(daily, [live, daily], '2026-11-05');
-  assert.equal(deck[0].id, 'choice-blindness');
-  assert.equal(deck[1].id, 'pluralistic-ignorance');
+  assert.equal(deck[0].id, 'voss-mirror');
+  assert.equal(deck[1].id, 'ghost-army');
   assert.ok(deck.some(card => card.id === daily.id));
   for (const id of ['beluga-half-sleep', 'octopus-hunting-team']) {
     const clip = featuredClip(DEEP_CARDS.find(card => card.id === id));

@@ -32,3 +32,14 @@ See individual card source links for attribution. Excerpts from Simple English W
 ## Lesson content
 
 The feed opens each idea with a finding, follows the explanation through an example, and ends with a question about understanding. Reading sections advance on tap by default. Automatic source readings require an explanation and an example or research paragraph. Short encyclopedia leads are skipped. Rewritten archived lessons retain their saved notes and review history.
+
+
+## Personalized book and story feed
+
+The feed includes 17 additional original micro-lessons: Think and Grow Rich, Never Split the Difference, The 7 Habits, How to Win Friends and Influence People, Atomic Habits, Deep Work, Tony Robbins coaching exercises, and four unusual military-history stories. Each has a source, a mechanism or example, and a recall question. The previously featured Cold War art story is no longer recommended by default; existing archives retain it.
+
+Like / Dislike are independent of Save / Learn. A rating is stored as `feedback` (-1, 0, 1) on the existing browser-local library record. Legacy records without that field are neutral. Existing note, saved, and review fields are preserved; backups and cross-tab updates include ratings automatically. Settings supports individual undo and resetting ratings.
+
+Recommendations score shared tags, author, topic and content kind; dislikes exclude the exact idea and reduce related content. Learned ideas are demoted. Every fourth selection preserves an exploration slot, and at most two consecutive recommendations share a topic when alternatives exist. Rating an active card only rebuilds its upcoming tail. Discovery category ordering also uses these preferences with periodic unpersonalized exploration. Source availability and existing source quality filters still determine whether new network lessons can be added.
+
+Validation: `node --test` covers valid lessons, relevance changes, dislikes/undo, legacy backups and merges, mixed opening editions, discovery preferences, and the existing archive/review/media behavior. Browser QA covers desktop and 390px phone UI, immediate reordering, persistence after reload, mutual exclusion of ratings, and Settings undo/reset.

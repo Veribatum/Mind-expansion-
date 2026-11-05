@@ -1,4 +1,4 @@
-import { DEEP_ART } from './deep-art.js?v=5';
+import { DEEP_ART } from './deep-art.js?v=6';
 
 const PLANE = 'M200 51c-9 0-13 17-16 40l-9 69-88 49v18l85-22 9 56-35 21v14l54-12 54 12v-14l-35-21 9-56 85 22v-18l-88-49-9-69c-3-23-7-40-16-40Z';
 
@@ -106,7 +106,65 @@ function orbit(beat) {
   </g>`;
 }
 
-const ART = { plane, memory, habit, metric, clock, moon, ocean, network, lens, orbit, ...DEEP_ART };
+
+function dialogue(beat) {
+  return `<g fill="var(--deep)" stroke="var(--glow)" stroke-width="2">
+    <path d="M65 86h186a24 24 0 0 1 24 24v75a24 24 0 0 1-24 24H126l-42 30 7-30H65a24 24 0 0 1-24-24v-75a24 24 0 0 1 24-24Z"/>
+    <path d="M190 170h130a24 24 0 0 1 24 24v62a24 24 0 0 1-24 24h-8l8 28-43-28h-87a24 24 0 0 1-24-24v-62a24 24 0 0 1 24-24Z" fill="var(--field)"/>
+    <path d="M82 127h143m-143 23h101m-101 23h65" opacity=".65"/>
+    ${[0,1,2].map(i => `<circle class="art-signal" style="--delay:${i*150}ms" cx="${213+i*33}" cy="225" r="${beat===i?9:5}" fill="var(--paper-light)" stroke="none"/>`).join('')}
+    <path class="art-flow" d="m89 268 32 19 24-10" fill="none"/>
+  </g>`;
+}
+function plan(beat) {
+  return `<g transform="rotate(-8 200 188)">
+    <rect x="103" y="66" width="205" height="250" rx="12" fill="var(--field)" stroke="var(--glow)"/>
+    <rect x="83" y="54" width="205" height="250" rx="12" fill="var(--paper-light)"/>
+    <path d="M119 93h131m-131 11h85" stroke="var(--deep)" stroke-width="5" opacity=".7"/>
+    ${[0,1,2].map((i) => `<rect x="117" y="${137+i*48}" width="20" height="20" rx="3" fill="none" stroke="var(--deep)" stroke-width="2"/>
+      <path d="M151 ${147+i*48}h91m-91 11h60" stroke="var(--deep)" stroke-width="3" opacity=".45"/>
+      ${i<=beat?`<path class="art-flow" d="m119 ${146+i*48} 7 7 17-21" fill="none" stroke="var(--deep)" stroke-width="3"/>`:''}`).join('')}
+    <path d="m253 236 14-10 47 66-5 22-18-9z" fill="var(--glow)" stroke="var(--deep)" stroke-width="2"/>
+  </g>`;
+}
+function tank(beat) {
+  return `<g stroke="var(--glow)" stroke-width="2">
+    <path d="M56 260h294M78 278h255" opacity=".4" stroke-dasharray="5 7"/>
+    <rect x="76" y="218" width="240" height="42" rx="21" fill="var(--deep)"/>
+    ${[0,1,2,3,4,5].map(i=>`<circle cx="${101+i*37}" cy="239" r="12" fill="var(--field)"/>`).join('')}
+    <path d="m83 219 25-47h168l34 47Z" fill="var(--field)"/>
+    <path d="m145 172 10-44h75l16 44Z" fill="var(--field)"/>
+    <path d="M231 141h100v12h-96" fill="var(--paper-light)"/>
+    <path d="M166 132v33m35-33v33M113 185h162m-90-12v40" opacity=".45"/>
+    <path d="m192 180 4 12h13l-10 7 4 13-11-8-10 8 4-13-11-7h13z" fill="var(--paper-light)" stroke="none"/>
+    ${beat?'<path class="art-flow" d="M84 105q-22 38-8 76m241-72q25 38 7 76" fill="none" stroke-dasharray="4 6"/><text x="200" y="92" fill="var(--paper-light)" stroke="none" font-size="15" text-anchor="middle" letter-spacing="5">DECOY</text>':''}
+  </g>`;
+}
+function pigeon(beat) {
+  return `<g stroke="var(--glow)" stroke-width="2">
+    <rect x="65" y="75" width="268" height="214" rx="90" fill="var(--deep)"/>
+    <path d="M192 78v205" opacity=".4" stroke-dasharray="4 5"/>
+    <path d="M116 236q-41-46-3-91 32-27 65 7l22 4-20 17q8 47-34 67l-30 20Z" fill="var(--paper-light)"/>
+    <path d="M118 174q-20 35 23 41l21-39" fill="var(--field)"/>
+    <circle cx="159" cy="150" r="4" fill="var(--deep)" stroke="none"/>
+    <path d="m141 238 3 23m-22 0h36"/>
+    <circle cx="259" cy="176" r="44" fill="var(--field)"/>
+    <path d="M259 124v105m-52-53h104" opacity=".7"/>
+    <circle class="art-signal" cx="${beat?259:278}" cy="${beat?176:162}" r="8" fill="var(--glow)"/>
+  </g>`;
+}
+function ship(beat) {
+  return `<g stroke="var(--glow)" stroke-width="2">
+    <path d="M47 219h299l-46 46H95Z" fill="var(--paper-light)"/>
+    <path d="M96 218v-43h169v43m-126-43v-31h81v31m-21-31v-35h19v35" fill="var(--field)"/>
+    <path d="m110 220 48 44h43l-44-44Zm79 0 44 44h50l-45-44Z" fill="var(--deep)" stroke="none"/>
+    <path d="m100 177 39 41h36l-38-41Zm82 0 38 41h30l-29-41Z" fill="var(--deep)" stroke="none"/>
+    <path class="art-flow" d="M58 283q30-14 60 0t60 0 60 0 60 0 50 0" fill="none"/>
+    <path d="M200 105v-38l40 13-40 10" fill="var(--glow)"/>
+    ${beat?'<path class="art-flow" d="m61 111 43 36m172-33 52-27" fill="none" stroke-dasharray="3 5"/>':''}
+  </g>`;
+}
+const ART = { dialogue, plan, tank, pigeon, ship, plane, memory, habit, metric, clock, moon, ocean, network, lens, orbit, ...DEEP_ART };
 
 export function storyArt(kind, beat) {
   return `<svg viewBox="0 0 400 355" class="story-art" aria-hidden="true">

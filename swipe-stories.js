@@ -1,7 +1,18 @@
-import { EDITORIAL } from './cards.js?v=5';
-import { authoredLesson, isLesson } from './lessons.js?v=5';
-import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=5';
-import { dayNumber, normalize } from './learning.js?v=5';
+import { BOOK_STORIES } from './book-stories.js?v=6';
+import { rankCards } from './preferences.js?v=6';
+import { EDITORIAL } from './cards.js?v=6';
+import { authoredLesson, isLesson } from './lessons.js?v=6';
+import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=6';
+import { dayNumber, normalize } from './learning.js?v=6';
+
+const BOOK_LOOKS = {
+  'voss-mirror': ['dialogue', 'violet'], 'voss-label': ['dialogue', 'rose'], 'voss-how-question': ['dialogue', 'blue'],
+  'carnegie-interest': ['dialogue', 'mint'], 'carnegie-appreciation': ['dialogue', 'amber'], 'covey-understand': ['dialogue', 'blue'],
+  'hill-definite-purpose': ['plan', 'amber'], 'hill-persistence': ['plan', 'rose'], 'covey-influence': ['network', 'mint'],
+  'covey-big-rocks': ['clock', 'violet'], 'clear-two-minutes': ['habit', 'mint'], 'newport-deep-break': ['memory', 'blue'],
+  'robbins-state': ['network', 'rose'], 'ghost-army': ['tank', 'amber'], 'mincemeat': ['plan', 'blue'],
+  'skinner-pigeons': ['pigeon', 'violet'], 'dazzle-ships': ['ship', 'mint'],
+};
 
 const make = (art, title, beats, accent) => ({ art, title, beats, accent });
 const ORIGINALS = {
@@ -126,7 +137,8 @@ function sourceBeats(card) {
 
 export function storyFor(card) {
   const taught = authoredLesson(card);
-  const appearance = DEEP_STORIES[card.id] || ORIGINALS[card.id];
+  const look = BOOK_LOOKS[card.id];
+  const appearance = look ? { art: look[0], accent: look[1] } : DEEP_STORIES[card.id] || ORIGINALS[card.id];
   const [art, accent] = STYLE_BY_TOPIC[card.topic];
   if (taught.lesson) {
     return make(appearance?.art || art, taught.title,
@@ -143,30 +155,28 @@ export function cardKey(card) {
   return normalize(card.id.startsWith('simple-wiki-') ? card.title : card.kicker || card.title);
 }
 
-export function openingCards(daily, pool, day) {
-  const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS].map(card => [card.id, card]));
-  const lead = ['choice-blindness', 'pluralistic-ignorance', 'beluga-half-sleep', 'octopus-hunting-team'];
-  const firstDay = dayNumber(day) - dayNumber('2026-11-05');
-  const leadId = lead[(firstDay % lead.length + lead.length) % lead.length];
-  const groups = [
-    ['pluralistic-ignorance', 'beluga-half-sleep', 'loftus-broken-glass', 'octopus-hunting-team', 'cold-war-art'],
-    ['bee-ball-play', 'loftus-broken-glass', 'dyatlov-snow-slab', 'glassfrog-blood', 'baboon-peace-culture'],
-    ['spotlight-shirt', 'strasbourg-dancing', 'boundary-memory', 'lunar-phases', 'ocean-eddies'],
+export function openingCards(daily, pool, day, records = {}) {
+  const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS, ...BOOK_STORIES].map(card => [card.id, card]));
+  const editions = [
+    ['voss-mirror', 'ghost-army', 'hill-definite-purpose', 'beluga-half-sleep', 'covey-big-rocks'],
+    ['hill-persistence', 'mincemeat', 'carnegie-interest', 'octopus-hunting-team', 'clear-two-minutes'],
+    ['covey-understand', 'skinner-pigeons', 'robbins-state', 'bee-ball-play', 'newport-deep-break'],
+    ['voss-label', 'dazzle-ships', 'covey-influence', 'glassfrog-blood', 'carnegie-appreciation'],
   ];
-  const start = (firstDay % groups.length + groups.length) % groups.length;
-  const ordered = [...groups.slice(start), ...groups.slice(0, start)];
+  const offset = ((dayNumber(day) - dayNumber('2026-11-05')) % editions.length + editions.length) % editions.length;
+  const ordered = [...editions.slice(offset), ...editions.slice(0, offset)].flat();
   const candidates = [
-    byId.get(leadId), ...ordered[0].map(id => byId.get(id)), daily,
-    ...ordered[1].map(id => byId.get(id)), ...pool.filter(isLesson).slice(0, 2),
-    ...ordered[2].map(id => byId.get(id)), ...DEEP_CARDS, ...FEATURED, ...EDITORIAL, ...pool.filter(isLesson),
-  ].filter(Boolean).map(authoredLesson).filter(isLesson);
+    ...ordered.slice(0, 5).map(id => byId.get(id)), daily,
+    ...ordered.slice(5).map(id => byId.get(id)), ...BOOK_STORIES,
+    ...DEEP_CARDS.filter(card => card.id !== 'cold-war-art'), ...EDITORIAL, ...FEATURED, ...pool.filter(isLesson),
+  ].filter(card => card && card.id !== 'cold-war-art').map(authoredLesson).filter(isLesson);
   const ids = new Set();
   const keys = new Set();
-  return candidates.filter(card => {
+  return rankCards(candidates.filter(card => {
     const key = cardKey(card);
     if (ids.has(card.id) || keys.has(key)) return false;
     ids.add(card.id);
     keys.add(key);
     return true;
-  });
+  }), records);
 }

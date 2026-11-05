@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { BOOK_STORIES } from '../book-stories.js';
 import { EDITORIAL } from '../cards.js';
 import { SOURCE_TEXT } from './fixture.js';
 import { DEEP_CARDS } from '../deep-cuts.js';
@@ -84,7 +85,7 @@ test('fresh days can retrieve unseen source articles and keep working offline', 
 
 test('an exhausted offline library offers a retry without recycling old ideas', async () => {
   const state = newState();
-  [...EDITORIAL, ...DEEP_CARDS].forEach((item, index) => { state.days[addDays(day, -index)] = item; });
+  [...EDITORIAL, ...DEEP_CARDS, ...BOOK_STORIES].forEach((item, index) => { state.days[addDays(day, -index)] = item; });
   const result = await selectIdea({ state, day: '2026-11-07', allowNetwork: false });
   assert.equal(result.card, null);
 });

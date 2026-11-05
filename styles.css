@@ -315,3 +315,11 @@ body:has(.detail[open]) .notice { z-index: 7; }
 .lesson-reading p { margin-top: 4px; font-size: .96rem; line-height: 1.65; }
 .lesson-takeaway { padding: 11px 13px; background: #e9eddc; border-left: 2px solid #8ba354; border-radius: 0 7px 7px 0; }
 .lesson-takeaway strong { display: block; font-size: .74rem; }
+
+.preferences-panel { grid-column: 1 / -1; }
+.preference-count { font-size: .83rem; font-weight: 650; margin-top: 15px; }
+.preference-list { list-style: none; padding: 0; margin: 10px 0; max-height: 340px; overflow: auto; }
+.preference-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.preference-list li > span { display: grid; gap: 3px; font-size: .87rem; }
+.preference-list small { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.preference-list .button { min-height: 40px; }

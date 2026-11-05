@@ -1,16 +1,17 @@
-import { TOPICS, normalize } from './learning.js?v=5';
-import { exploreIdeas } from './feed.js?v=5';
-import { storyArt } from './swipe-art.js?v=5';
-import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=5';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=5';
-import { evidenceDetails } from './evidence.js?v=5';
-import { lessonReading } from './lessons.js?v=5';
+import { feedbackKey, rankCards } from './preferences.js?v=6';
+import { TOPICS, normalize } from './learning.js?v=6';
+import { exploreIdeas } from './feed.js?v=6';
+import { storyArt } from './swipe-art.js?v=6';
+import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=6';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=6';
+import { evidenceDetails } from './evidence.js?v=6';
+import { lessonReading } from './lessons.js?v=6';
 
 const SET_SIZE = 5;
 const MAX_DECK = 120;
 
 export function mountSwipe(root, options) {
-  const { day, icon, escape: esc, onAction, onPool, getRecord, getDue, resume } = options;
+  const { day, icon, escape: esc, onAction, onPool, getRecord, getRecords, onFeedback, getDue, resume } = options;
   const sameDay = resume?.day === day;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const button = (action, label, symbol, extra = '') =>
@@ -21,7 +22,7 @@ export function mountSwipe(root, options) {
     <aside class="reel-intro">
       <p class="reel-eyebrow"><span></span> ONE IDEA, UNDERSTOOD</p>
       <h1>Good things<br>to know<span>.</span></h1>
-      <p class="reel-deck-text">Learn the finding, understand the explanation, and see how the idea works in another situation.</p>
+      <p class="reel-deck-text">Book ideas you can use today. Conversations that go better. History and animal behavior worth knowing.</p>
       <div class="reel-nav">
         ${arrow('prev', 'Previous idea')}${arrow('next', 'Next idea')}
         <span class="reel-position" data-position>Opening edition</span>
@@ -60,6 +61,9 @@ export function mountSwipe(root, options) {
   let lastScroll = -1000;
   let lastTick = performance.now();
   let initialLoad;
+  let ratingSignature;
+  let dailyCard;
+  let latestPool = [];
 
   function reel(card, position, isDaily) {
     const story = storyFor(card);
@@ -85,6 +89,7 @@ export function mountSwipe(root, options) {
     <div class="reel-art"><div class="reel-illustration" data-art></div>
       <div class="reel-inline" data-inline hidden></div></div>
     <div class="reel-copy">
+      <p class="reel-origin" title="${esc(card.source.title + ' · ' + card.source.byline)}">${esc(card.kind === 'book' ? card.source.title : card.kicker)}</p>
       <p class="reel-section-number" data-section-number></p>
       <p class="reel-kicker" data-kicker></p>
       <h2>${esc(story.title)}</h2>
@@ -95,6 +100,11 @@ export function mountSwipe(root, options) {
         ${clip ? playButton() : ''}
         <button class="reel-text-button" type="button" data-swipe="read">${icon('library')} Full lesson</button>
       </div>
+    </div>
+    <div class="reel-feedback" role="group" aria-label="Tune your feed">
+      ${actionButton('like', 'Like: more like this', 'thumb-up', 'Like')}
+      ${actionButton('dislike', 'Dislike: less like this', 'thumb-down', 'Dislike')}
+      <span>Make this feed yours</span>
     </div>
     <div class="reel-footer">
       ${actionButton('save', 'Save idea', 'bookmark', 'Save')}
@@ -126,9 +136,9 @@ export function mountSwipe(root, options) {
     return { element };
   }
 
-  function append(incoming, daily) {
+  function append(incoming, daily, ordered = false) {
     const fragment = document.createDocumentFragment();
-    for (const card of incoming) {
+    for (const card of ordered ? incoming : rankCards(incoming, getRecords())) {
       if (seen.has(card.id) || seen.has(cardKey(card)) || cards.length >= MAX_DECK) continue;
       seen.add(card.id);
       seen.add(cardKey(card));
@@ -147,6 +157,30 @@ export function mountSwipe(root, options) {
     const end = track.querySelector('.reel-end');
     track.insertBefore(fragment, end || null);
     if (end && cards.length < MAX_DECK && emptyBatches < 2) removeEnd();
+  }
+
+  function rerankUpcoming() {
+    if (!initialized || !active || !active.card) return;
+    const signature = feedbackKey(getRecords());
+    if (signature === ratingSignature) return;
+    ratingSignature = signature;
+    // Keep the current card and everything before it in place. Only rebuild the
+    // unseen tail; this also makes undo able to restore a formerly hidden idea.
+    const prefix = entries.slice(0, index + 1);
+    const previousCards = prefix.filter(entry => entry.card).map(entry => entry.card);
+    const previousIds = new Set(previousCards.map(card => card.id));
+    const candidates = [...new Map([...cards, ...openingCards(dailyCard, latestPool, day)]
+      .filter(card => !previousIds.has(card.id)).map(card => [card.id, card])).values()];
+    const next = rankCards(candidates, getRecords()).slice(0, MAX_DECK - previousCards.length);
+    entries.slice(index + 1).forEach(entry => entry.element.remove());
+    entries.splice(index + 1);
+    cards.splice(0, cards.length, ...previousCards);
+    seen.clear();
+    previousCards.forEach(card => {
+      seen.add(card.id); seen.add(cardKey(card)); seen.add(normalize(card.title));
+    });
+    append(next, dailyCard, true);
+    track.scrollTop = active.element.offsetTop;
   }
 
   function removeEnd() {
@@ -210,6 +244,13 @@ export function mountSwipe(root, options) {
     const record = getRecord(active.card.id);
     const save = active.element.querySelector('[data-save-state]');
     const learn = active.element.querySelector('[data-learn-state]');
+    for (const [action, value] of [['like', 1], ['dislike', -1]]) {
+      const control = active.element.querySelector('[data-' + action + '-state]');
+      const selected = record?.feedback === value;
+      control.setAttribute('aria-pressed', String(selected));
+      control.setAttribute('aria-label', selected ? 'Undo ' + action : action === 'like' ? 'Like: more like this' : 'Dislike: less like this');
+      control.querySelector('span').textContent = selected ? (value === 1 ? 'Liked' : 'Disliked') : (value === 1 ? 'Like' : 'Dislike');
+    }
     const pause = active.element.querySelector('[data-pause]');
     save.setAttribute('aria-pressed', String(!!record?.saved));
     save.setAttribute('aria-label', record?.saved ? 'Remove saved idea' : 'Save idea');
@@ -300,7 +341,7 @@ export function mountSwipe(root, options) {
     if (note) note.textContent = 'Looking for fresh ideas…';
     if (trigger) trigger.disabled = true;
     try {
-      const next = await exploreIdeas({ day, batch: batch++, seen, signal: controller.signal });
+      const next = await exploreIdeas({ day, batch: batch++, seen, records: getRecords(), signal: controller.signal });
       if (stopped) return;
       const before = cards.length;
       const leavingEnd = !!active?.end;
@@ -617,6 +658,13 @@ export function mountSwipe(root, options) {
         const current = beats.get(card.id) || 0;
         if (current === story.beats.length - 1) openCheck(entry);
         else nextScene(entry, current + 1);
+      } else if (action === 'like' || action === 'dislike') {
+        control.disabled = true;
+        const value = action === 'like' ? 1 : -1;
+        try {
+          await onFeedback(card, getRecord(card.id)?.feedback === value ? 0 : value);
+          if (!stopped) { rerankUpcoming(); reflect(); }
+        } finally { control.disabled = false; }
       } else if (action === 'pause') {
         paused = !paused;
         if (paused) inlinePlayer?.video.pause();
@@ -668,9 +716,12 @@ export function mountSwipe(root, options) {
 
   return {
     update(daily, pool, waiting) {
+      dailyCard = daily;
+      latestPool = pool;
       if (!initialized && (daily || !waiting)) {
         initialized = true;
-        append(sameDay ? resume.cards : openingCards(daily, pool, day), daily);
+        append(sameDay ? resume.cards : openingCards(daily, pool, day, getRecords()), daily, true);
+        ratingSignature = sameDay ? null : feedbackKey(getRecords());
         const restored = sameDay ? Math.min(resume.index, entries.length - 1) : 0;
         if (entries[restored]) track.scrollTop = entries[restored].element.offsetTop;
         activate(restored);
@@ -678,6 +729,7 @@ export function mountSwipe(root, options) {
           if (!sameDay && cards.length < 20) void more();
         }, 1250);
       }
+      rerankUpcoming();
       reflect();
     },
     snapshot() {

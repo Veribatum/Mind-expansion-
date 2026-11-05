@@ -219,3 +219,10 @@
   .reel-art { min-height: 30px; }
   .reel-caption { max-height: 8em; }
 }
+
+.reel-origin { color: #f2efe5b8; font-size: .62rem; line-height: 1.25; margin: 0 0 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reel-feedback { z-index: 1; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.reel-feedback .reel-labeled { display: inline-flex; width: auto; flex: 0 0 auto; min-height: 38px; height: 38px; padding: 6px 11px; gap: 6px; font-size: .72rem; }
+.reel-feedback .icon { width: 17px; height: 17px; }
+.reel-feedback > span { margin-left: auto; font-size: .6rem; color: #f2efe5a8; }
+@media (max-height: 760px) { .reel-feedback { margin-top: 6px; } .reel-origin { margin-bottom: 2px; } }
