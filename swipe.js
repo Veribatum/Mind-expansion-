@@ -1,17 +1,18 @@
-import { feedbackKey, rankCards } from './preferences.js?v=6';
-import { TOPICS, normalize } from './learning.js?v=6';
-import { exploreIdeas } from './feed.js?v=6';
-import { storyArt } from './swipe-art.js?v=6';
-import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=6';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=6';
-import { evidenceDetails } from './evidence.js?v=6';
-import { lessonReading } from './lessons.js?v=6';
+import { feedbackKey, rankCards } from './preferences.js?v=7';
+import { TOPICS, normalize } from './learning.js?v=7';
+import { fetchCatalog } from './catalog.js?v=7';
+import { exploreIdeas } from './feed.js?v=7';
+import { storyArt } from './swipe-art.js?v=7';
+import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=7';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=7';
+import { evidenceDetails } from './evidence.js?v=7';
+import { lessonReading } from './lessons.js?v=7';
 
 const SET_SIZE = 5;
 const MAX_DECK = 120;
 
 export function mountSwipe(root, options) {
-  const { day, icon, escape: esc, onAction, onPool, getRecord, getRecords, onFeedback, getDue, resume } = options;
+  const { day, icon, escape: esc, onAction, onPool, getRecord, getRecords, onFeedback, getDue, getProgress, resume } = options;
   const sameDay = resume?.day === day;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const button = (action, label, symbol, extra = '') =>
@@ -20,14 +21,15 @@ export function mountSwipe(root, options) {
   const blank = '<div class="reel-loading" role="status">Opening the feed…</div>';
   root.innerHTML = `<section class="reel-layout" aria-label="Mind Expansion feed">
     <aside class="reel-intro">
-      <p class="reel-eyebrow"><span></span> ONE IDEA, UNDERSTOOD</p>
-      <h1>Good things<br>to know<span>.</span></h1>
+      <p class="reel-eyebrow"><span></span> THE DISCOVERY FEED</p>
+      <h1>Find your<br>next idea<span>.</span></h1>
       <p class="reel-deck-text">Book ideas you can use today. Conversations that go better. History and animal behavior worth knowing.</p>
       <div class="reel-nav">
         ${arrow('prev', 'Previous idea')}${arrow('next', 'Next idea')}
         <span class="reel-position" data-position>Opening edition</span>
       </div>
       <div class="reel-side-links">
+        <a href="#progress">${icon('progress')} Your progress <span data-reel-streak></span>${icon('arrow')}</a>
         <a href="#today">${icon('sun')} Today’s reading ${icon('arrow')}</a>
         <a href="#review">${icon('review')} Review <span data-reel-due></span>${icon('arrow')}</a>
       </div>
@@ -64,6 +66,9 @@ export function mountSwipe(root, options) {
   let ratingSignature;
   let dailyCard;
   let latestPool = [];
+  let latestCatalog = [];
+  let catalogCursor;
+  const recommendationKey = () => [feedbackKey(getRecords()), dailyCard?.id, ...latestCatalog.map(card => card.id)].join('|');
 
   function reel(card, position, isDaily) {
     const story = storyFor(card);
@@ -76,41 +81,39 @@ export function mountSwipe(root, options) {
     element.className = 'reel';
     element.dataset.accent = story.accent;
     element.setAttribute('aria-label', story.title);
+    element.classList.toggle('has-clip', !!clip);
     element.inert = true;
     element.innerHTML = `<div class="reel-top">
       <div class="reel-steps" aria-label="Lesson sections">
         ${story.beats.map((_, i) => `<button type="button" aria-label="Section ${i + 1}: ${esc(story.beats[i][0])}" data-scene="${i}"><span></span></button>`).join('')}
       </div>
       <div class="reel-meta"><span class="reel-pill">${isDaily ? icon('sun') + ' DAILY IDEA' : esc(TOPICS[card.topic])}</span>
-        <span class="reel-format">${card.id.startsWith('simple-wiki-') ? 'SOURCE LESSON' : 'SHORT LESSON'}</span>
+        <span class="reel-format">${clip ? (clip.duration ? `${clip.duration}s VIDEO` : 'VIDEO') : '1 MIN READ'}</span>
         ${story.beats.length > 1 ? button('pause', 'Pause scenes', 'pause', 'data-pause') : ''}
       </div>
     </div>
     <div class="reel-art"><div class="reel-illustration" data-art></div>
+      <div data-clip-cover>${clip ? clipCover(clip) : ''}</div>
       <div class="reel-inline" data-inline hidden></div></div>
     <div class="reel-copy">
-      <p class="reel-origin" title="${esc(card.source.title + ' · ' + card.source.byline)}">${esc(card.kind === 'book' ? card.source.title : card.kicker)}</p>
       <p class="reel-section-number" data-section-number></p>
       <p class="reel-kicker" data-kicker></p>
       <h2>${esc(story.title)}</h2>
+      <p class="reel-origin"><strong>${esc(card.source.byline.split(' · ')[0])}</strong><span aria-hidden="true"> · </span>
+        <a href="${esc(card.source.url)}" target="_blank" rel="noopener noreferrer" title="${esc(card.source.title)}">${esc(card.source.title.split(' · ')[0])} ${icon('external')}</a></p>
       <p class="reel-caption" data-caption></p>
       <p class="reel-remember" data-remember hidden></p>
       <div class="reel-buttons">
         ${story.beats.length > 1 ? '<button class="reel-primary" type="button" data-swipe="beat" data-beat></button>' : ''}
-        ${clip ? playButton() : ''}
         <button class="reel-text-button" type="button" data-swipe="read">${icon('library')} Full lesson</button>
       </div>
     </div>
-    <div class="reel-feedback" role="group" aria-label="Tune your feed">
+    <div class="reel-footer" role="group" aria-label="Idea actions">
       ${actionButton('like', 'Like: more like this', 'thumb-up', 'Like')}
       ${actionButton('dislike', 'Dislike: less like this', 'thumb-down', 'Dislike')}
-      <span>Make this feed yours</span>
-    </div>
-    <div class="reel-footer">
       ${actionButton('save', 'Save idea', 'bookmark', 'Save')}
       ${actionButton('learn', 'Mark as learned', 'check', 'Learn')}
-      <span class="reel-card-number">${position ? 'IDEA <strong>' + String(position + 1).padStart(2, '0') + '</strong>' : 'SWIPE UP'}</span>
-      ${arrow('next', 'Next idea')}
+      <button type="button" class="reel-tool reel-next" data-swipe="next" aria-label="Next idea">${icon('down')}<span>Next</span></button>
     </div>`;
     const entry = { element, card, story, clip, position, seen: false };
     paint(entry, Math.min(beats.get(card.id) || 0, story.beats.length - 1));
@@ -161,7 +164,7 @@ export function mountSwipe(root, options) {
 
   function rerankUpcoming() {
     if (!initialized || !active || !active.card) return;
-    const signature = feedbackKey(getRecords());
+    const signature = recommendationKey();
     if (signature === ratingSignature) return;
     ratingSignature = signature;
     // Keep the current card and everything before it in place. Only rebuild the
@@ -169,7 +172,7 @@ export function mountSwipe(root, options) {
     const prefix = entries.slice(0, index + 1);
     const previousCards = prefix.filter(entry => entry.card).map(entry => entry.card);
     const previousIds = new Set(previousCards.map(card => card.id));
-    const candidates = [...new Map([...cards, ...openingCards(dailyCard, latestPool, day)]
+    const candidates = [...new Map([...openingCards(dailyCard, latestPool, day, {}, latestCatalog), ...cards]
       .filter(card => !previousIds.has(card.id)).map(card => [card.id, card])).values()];
     const next = rankCards(candidates, getRecords()).slice(0, MAX_DECK - previousCards.length);
     entries.slice(index + 1).forEach(entry => entry.element.remove());
@@ -235,6 +238,8 @@ export function mountSwipe(root, options) {
 
   function reflect() {
     const due = getDue();
+    const { streak } = getProgress();
+    root.querySelector('[data-reel-streak]').textContent = streak ? streak + ' day streak' : '';
     root.querySelector('[data-reel-due]').textContent = due ? due + ' due' : '';
     root.querySelector('[data-position]').textContent = active?.card
       ? 'Idea ' + (active.position + 1) : !active ? 'Opening edition' : active.end ? 'End of the stack' : 'Quick recall';
@@ -284,7 +289,6 @@ export function mountSwipe(root, options) {
     entry.element.inert = false;
     entry.element.classList.add('is-active');
     reflect();
-    if (entry.clip) showPlayer(entry);
     if (entry.card && !entry.clip && canFindClip(entry.card)) {
       clipTimer = setTimeout(() => { void lookForClip(entry); }, 1300);
     }
@@ -341,7 +345,23 @@ export function mountSwipe(root, options) {
     if (note) note.textContent = 'Looking for fresh ideas…';
     if (trigger) trigger.disabled = true;
     try {
-      const next = await exploreIdeas({ day, batch: batch++, seen, records: getRecords(), signal: controller.signal });
+      let next = [];
+      if (catalogCursor !== null) {
+        try {
+          const page = await fetchCatalog({ before: catalogCursor, signal: controller.signal });
+          catalogCursor = page.next;
+          next = page.cards.filter(card => !seen.has(card.id) && getRecord(card.id)?.feedback !== -1);
+          // The latest page is usually already represented in the opening deck.
+          if (!next.length && catalogCursor) {
+            const older = await fetchCatalog({ before: catalogCursor, signal: controller.signal });
+            catalogCursor = older.next;
+            next = older.cards.filter(card => !seen.has(card.id) && getRecord(card.id)?.feedback !== -1);
+          }
+        } catch {
+          // Discovery can continue if the catalog cannot be reached.
+        }
+      }
+      if (!next.length) next = await exploreIdeas({ day, batch: batch++, seen, records: getRecords(), signal: controller.signal });
       if (stopped) return;
       const before = cards.length;
       const leavingEnd = !!active?.end;
@@ -375,18 +395,18 @@ export function mountSwipe(root, options) {
     }
   }
 
-  function playButton() {
-    return '<button class="reel-text-button" type="button" data-swipe="clip">'
-      + icon('play') + ' Play clip</button>';
+  function clipCover(clip) {
+    return `<button class="reel-clip-cover${clip.poster ? ' with-poster' : ''}" type="button" data-swipe="clip" aria-label="Play video: ${esc(clip.title)}">
+      ${clip.poster ? `<img src="${esc(clip.poster)}" alt="" loading="lazy" decoding="async">` : ''}
+      <span class="clip-cover-label"><span class="clip-play">${icon('play')}</span> Play video${clip.duration ? ` <small>0:${String(clip.duration).padStart(2, '0')}</small>` : ''}</span></button>`;
   }
 
   function offerClip(entry, clip) {
     if (entry.clip) return;
     entry.clip = clip;
-    entry.element.querySelector('.reel-format').textContent = 'VIDEO ON CARD';
-    const read = entry.element.querySelector('[data-swipe="read"]');
-    read.insertAdjacentHTML('beforebegin', playButton());
-    if (active === entry) showPlayer(entry);
+    entry.element.classList.add('has-clip');
+    entry.element.querySelector('.reel-format').textContent = 'VIDEO';
+    entry.element.querySelector('[data-clip-cover]').innerHTML = clipCover(clip);
   }
 
   function releasePlayer() {
@@ -401,74 +421,36 @@ export function mountSwipe(root, options) {
     entry.element.classList.remove('has-inline-video');
   }
 
-  function updatePlayer(player) {
-    if (inlinePlayer !== player) return;
-    const { entry, video, failed, finished } = player;
-    const control = entry.element.querySelector('[data-swipe="clip"]');
-    control.hidden = failed;
-    if (failed) return;
-    const text = video.paused ? (finished ? 'Replay clip' : 'Play clip') : 'Pause clip';
-    control.innerHTML = icon(video.paused ? 'play' : 'pause') + ' ' + text;
-  }
-
-  function showPlayer(entry) {
+  function toggleClip(entry) {
     const { clip } = entry;
     if (!clip || inlinePlayer?.entry === entry) return;
+    releasePlayer();
     const holder = entry.element.querySelector('[data-inline]');
     holder.innerHTML = `<video class="reel-inline-video" playsinline muted controls
-      preload="metadata" aria-label="${esc(clip.title)}"></video>
+      preload="auto" ${clip.poster ? `poster="${esc(clip.poster)}"` : ''} aria-label="${esc(clip.title)}"></video>
       <a class="reel-inline-credit" href="${esc(clip.page)}" target="_blank" rel="noopener noreferrer"
       title="${esc(clip.credit)}">${esc(clip.credit)} ${icon('external')}</a>
       <p class="reel-inline-status" role="status"></p>`;
     const video = holder.querySelector('video');
     const status = holder.querySelector('[role="status"]');
-    const player = { entry, holder, video, finished: false, failed: false };
+    const player = { entry, holder, video };
     inlinePlayer = player;
     holder.hidden = false;
-    video.defaultMuted = true;
-    video.muted = true;
-    video.addEventListener('loadeddata', () => {
-      if (inlinePlayer === player) entry.element.classList.add('has-inline-video');
-    });
-    for (const type of ['play', 'pause']) video.addEventListener(type, () => updatePlayer(player));
-    video.addEventListener('ended', () => {
-      player.finished = true;
-      updatePlayer(player);
-    });
+    entry.element.classList.add('has-inline-video');
     if (clip.previewEnd) video.addEventListener('timeupdate', () => {
-      if (video.currentTime < clip.previewEnd || video.paused) return;
-      player.finished = true;
-      video.pause();
+      if (video.currentTime >= clip.previewEnd) video.pause();
     });
     video.addEventListener('error', () => {
       if (inlinePlayer !== player) return;
-      player.failed = true;
-      entry.element.classList.remove('has-inline-video');
       status.innerHTML = 'Clip unavailable. <a href="' + esc(clip.page)
-        + '" target="_blank" rel="noopener noreferrer">Open original</a>';
-      updatePlayer(player);
+        + '" target="_blank" rel="noopener noreferrer">Open the source</a>';
     });
     video.src = clip.url;
-    if (!motion.matches && !document.hidden && !sheet.open
-      && !navigator.connection?.saveData && (clip.local || navigator.onLine)) {
-      void video.play().catch(() => {});
-    }
-    updatePlayer(player);
-  }
-
-  function toggleClip(entry) {
-    showPlayer(entry);
-    if (!inlinePlayer || inlinePlayer.failed) return;
-    const { video } = inlinePlayer;
-    if (!video.paused) {
-      video.pause();
-      return;
-    }
-    if (inlinePlayer.finished) {
-      video.currentTime = 0;
-      inlinePlayer.finished = false;
-    }
-    void video.play().catch(() => {});
+    void video.play().catch(() => {
+      if (inlinePlayer === player && !video.error) status.textContent = 'Tap the video’s play control to start.';
+    });
+    video.addEventListener('playing', () => { status.textContent = ''; });
+    video.focus({ preventScroll: true });
   }
 
   function pauseHiddenPlayer() {
@@ -715,13 +697,14 @@ export function mountSwipe(root, options) {
   const clock = setInterval(() => tick(performance.now()), 150);
 
   return {
-    update(daily, pool, waiting) {
+    update(daily, pool, catalog) {
+      latestCatalog = catalog;
       dailyCard = daily;
       latestPool = pool;
-      if (!initialized && (daily || !waiting)) {
+      if (!initialized) {
         initialized = true;
-        append(sameDay ? resume.cards : openingCards(daily, pool, day, getRecords()), daily, true);
-        ratingSignature = sameDay ? null : feedbackKey(getRecords());
+        append(sameDay ? resume.cards : openingCards(daily, pool, day, getRecords(), catalog), daily, true);
+        ratingSignature = sameDay ? null : recommendationKey();
         const restored = sameDay ? Math.min(resume.index, entries.length - 1) : 0;
         if (entries[restored]) track.scrollTop = entries[restored].element.offsetTop;
         activate(restored);

@@ -1,4 +1,4 @@
-/* The discovery feed shares the app's paper and ink outside the illustrated stage. */
+/* The discovery feed uses a different accent for each story. */
 .page.is-feed { max-width: 1240px; padding-top: clamp(22px, 4.6vh, 56px); padding-bottom: 26px; }
 .reel-layout {
   display: grid; grid-template-columns: minmax(225px, 1fr) minmax(330px, 440px);
@@ -6,45 +6,45 @@
   min-height: min(750px, calc(100dvh - 92px)); margin-inline: auto;
 }
 .reel-intro { align-self: center; padding-bottom: 6px; }
-.reel-eyebrow { display: flex; align-items: center; gap: 9px; color: #52644c; font-size: .66rem; font-weight: 820; letter-spacing: .15em; }
-.reel-eyebrow span { width: 8px; height: 8px; background: #a54830; border-radius: 50%; }
+.reel-eyebrow { display: flex; align-items: center; gap: 9px; color: #baafff; font-size: .66rem; font-weight: 820; letter-spacing: .15em; }
+.reel-eyebrow span { width: 8px; height: 8px; background: #ffad93; border-radius: 50%; }
 .reel-intro h1 { margin-top: 12px; font-size: clamp(3.1rem, 6vw, 5.7rem); line-height: .95; }
 .reel-intro h1 span { color: var(--accent); }
 .reel-deck-text { max-width: 32ch; margin-top: 17px; color: var(--muted); font-size: .98rem; }
 .reel-nav { display: flex; align-items: center; gap: 8px; margin-top: 23px; }
-.reel-nav .reel-tool { color: #214135; background: #e9eddb; border-color: #d3dac5; }
-.reel-nav .reel-tool:hover { background: #dbe7cb; }
+.reel-nav .reel-tool { color: #ddd4ff; background: #28253d; border-color: #504567; }
+.reel-nav .reel-tool:hover { background: #3a3256; }
 .reel-nav .reel-tool:disabled { opacity: .35; }
 .reel-position { margin-left: 4px; font-size: .78rem; font-weight: 700; color: var(--muted); }
 .reel-side-links { display: grid; gap: 7px; max-width: 225px; margin-top: 21px; }
 .reel-side-links a {
   display: flex; align-items: center; gap: 8px; min-height: 41px; padding: 6px 9px;
   border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
-  color: #365044; text-decoration: none; font-size: .79rem; font-weight: 680;
+  color: #dad4f0; text-decoration: none; font-size: .79rem; font-weight: 680;
 }
-.reel-side-links a:hover { background: #edf0e2; }
+.reel-side-links a:hover { background: #25263b; }
 .reel-side-links .icon { width: 17px; height: 17px; }
 .reel-side-links .icon:last-child { margin-left: auto; width: 14px; }
-[data-reel-due] { font-size: .68rem; color: #506748; }
-.reel-hint { margin-top: 24px; color: #58665a; font-size: .63rem; font-weight: 760; letter-spacing: .12em; }
-.reel-hint kbd { margin-left: 2px; border: 1px solid #cad2c0; border-radius: 3px; padding: 1px 3px; letter-spacing: 0; }
+[data-reel-due] { font-size: .68rem; color: #a5cbff; }
+.reel-hint { margin-top: 24px; color: #b0acd1; font-size: .63rem; font-weight: 760; letter-spacing: .12em; }
+.reel-hint kbd { margin-left: 2px; border: 1px solid #514966; border-radius: 3px; padding: 1px 3px; letter-spacing: 0; }
 
 .reel-device {
   position: relative; height: min(760px, calc(100dvh - 76px)); min-height: 475px;
-  border: 1px solid #3c5047; border-radius: 24px; background: #132c28;
-  box-shadow: 0 30px 70px -36px #142e27ae; overflow: hidden;
+  border: 1px solid #44385f; border-radius: 24px; background: #11131f;
+  box-shadow: 0 30px 70px -36px #090914c0; overflow: hidden;
 }
 .reel-track {
   position: relative; height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden;
   overscroll-behavior-y: contain; scroll-snap-type: y mandatory; scrollbar-width: none;
-  background: #132c28; touch-action: pan-y; overflow-anchor: none;
+  background: #11131f; touch-action: pan-y; overflow-anchor: none;
 }
 .reel-track::-webkit-scrollbar { display: none; }
-.reel-track:focus-visible { outline: 2px solid #cde7a1; outline-offset: -3px; }
+.reel-track:focus-visible { outline: 2px solid #b8adff; outline-offset: -3px; }
 .reel-loading { display: grid; height: 100%; place-items: center; color: #eef3e6; padding: 18px; }
 
 .reel {
-  --deep: #0d2422; --field: #254639; --glow: #c9ee93; --paper-light: #f4efcf;
+  --deep: #121b2d; --field: #253e65; --glow: #8be0ff; --paper-light: #ebf8ff;
   height: 100%; position: relative; scroll-snap-align: start; scroll-snap-stop: always;
   display: flex; flex-direction: column; isolation: isolate; overflow: hidden; padding: 13px 19px 12px;
   color: #f8f7ee; background: var(--deep);
@@ -134,10 +134,10 @@
 .reel-card-number strong { color: var(--glow); font-weight: 900; }
 .reel button:focus-visible, .reel a:focus-visible { outline-color: var(--glow); outline-offset: 2px; }
 .reel-checkpoint, .reel-end { padding-bottom: 22px; }
-.reel-checkpoint .reel-answer { padding: 9px 10px; margin-top: 8px; color: #f5fae7; background: #a8ce8a22; border-radius: 7px; font-size: .82rem; line-height: 1.4; }
+.reel-checkpoint .reel-answer { padding: 9px 10px; margin-top: 8px; color: #f5fae7; background: #8be0ff22; border-radius: 7px; font-size: .82rem; line-height: 1.4; }
 
 .reel-sheet [data-reel-media]:not(:empty) { margin-top: 13px; }
-.reel-video { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 37dvh; border-radius: 10px; background: #11201c; }
+.reel-video { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 37dvh; border-radius: 10px; background: #101320; }
 .reel-video-message, .reel-credit { color: var(--muted); font-size: .73rem; margin-top: 6px; }
 .reel-credit .icon { width: 13px; height: 13px; }
 .reel-sheet .idea-text { margin-top: 7px; }
@@ -147,7 +147,6 @@
   .reel-intro h1 { font-size: clamp(2.65rem, 5.6vw, 4rem); }
 }
 @media (max-width: 780px) {
-  .bottom-nav { grid-template-columns: repeat(4, 1fr); }
   .page.is-feed { padding: 0; margin: 0; max-width: none; }
   .is-feed .storage-warning { margin: 0; border-radius: 0; }
   .reel-intro { display: none; }
@@ -203,13 +202,13 @@
 .reel-section-number {
   color: #f4f2e0b5; font-size: .61rem; letter-spacing: .13em; font-weight: 750; margin-bottom: 5px;
 }
-.reel-caption { font-size: .96rem; line-height: 1.5; max-height: 10.5em; }
+.reel-caption { font-size: .96rem; line-height: 1.5; max-height: 9em; }
 .reel-remember {
   margin-top: 9px; padding: 8px 9px; border-left: 2px solid var(--glow); background: #ffffff10;
   border-radius: 0 6px 6px 0; color: #fff9ed; font-size: .78rem; line-height: 1.4;
 }
 .reel-remember strong { display: block; color: var(--glow); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
-.lesson-check-answer { margin-top: 16px; padding: 13px 15px; background: #e9eddc; border-radius: 8px; white-space: pre-line; }
+.lesson-check-answer { margin-top: 16px; padding: 13px 15px; background: #24253a; border-radius: 8px; white-space: pre-line; }
 @media (max-width: 780px) {
   .reel h2 { font-size: clamp(1.62rem, 6.7vw, 2.2rem); }
   .reel-caption { font-size: .93rem; }
@@ -220,9 +219,51 @@
   .reel-caption { max-height: 8em; }
 }
 
-.reel-origin { color: #f2efe5b8; font-size: .62rem; line-height: 1.25; margin: 0 0 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.reel-feedback { z-index: 1; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.reel-feedback .reel-labeled { display: inline-flex; width: auto; flex: 0 0 auto; min-height: 38px; height: 38px; padding: 6px 11px; gap: 6px; font-size: .72rem; }
-.reel-feedback .icon { width: 17px; height: 17px; }
-.reel-feedback > span { margin-left: auto; font-size: .6rem; color: #f2efe5a8; }
-@media (max-height: 760px) { .reel-feedback { margin-top: 6px; } .reel-origin { margin-bottom: 2px; } }
+.reel-origin { color: #dedbea; font-size: .72rem; line-height: 1.35; margin: 6px 0 0; overflow-wrap: anywhere; }
+.reel-origin strong { color: #fbf9ff; font-weight: 700; }
+.reel-origin a { color: var(--glow); text-underline-offset: 2px; }
+.reel-origin .icon { width: 12px; height: 12px; }
+.reel-copy { flex: 0 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin; padding: 2px 1px; }
+.reel-footer { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; flex-shrink: 0; }
+.reel-footer .reel-tool, .reel-footer .reel-labeled, .reel-footer .reel-tool:last-child {
+  width: 100%; min-height: 46px; height: auto; padding: 5px 2px; border-radius: 9px;
+  display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  font-size: .64rem; font-weight: 690; line-height: 1.14;
+}
+.reel-footer .reel-tool.reel-next { color: var(--deep); background: var(--glow); border-color: var(--glow); }
+.reel-footer .reel-next:hover { background: var(--paper-light); }
+[data-reel-streak] { font-size: .67rem; color: #ffc880; }
+.reel-art { margin-block: 7px 10px; }
+.has-clip .reel-art { min-height: 108px; max-height: 268px; }
+[data-clip-cover] { position: absolute; inset: 0; display: grid; place-items: center; }
+.reel-clip-cover {
+  position: relative; width: 100%; height: 100%; min-height: 54px; isolation: isolate;
+  display: grid; place-items: center; overflow: hidden; border: 1px solid #f6eeff45;
+  border-radius: 14px; pointer-events: auto; color: white; background: #0b0d174d;
+  padding: 7px;
+}
+.reel-clip-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.reel-clip-cover.with-poster::after { content: ''; position: absolute; inset: 0; background: #080a1a27; }
+.clip-cover-label {
+  display: inline-flex; align-items: center; gap: 8px; position: relative; z-index: 1;
+  border: 1px solid #ffffff5c; border-radius: 99px; padding: 5px 10px 5px 5px;
+  color: #fff; background: #0b0c19e8; font-size: .78rem; font-weight: 730;
+  box-shadow: 0 6px 18px #0006; white-space: nowrap;
+}
+.clip-cover-label small { color: #e2e0f3; font-size: .69rem; font-variant-numeric: tabular-nums; }
+.clip-play { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%; color: var(--deep); background: var(--glow); }
+.clip-play .icon { width: 17px; height: 17px; }
+.reel-clip-cover:hover .clip-cover-label { border-color: var(--glow); }
+.has-inline-video [data-clip-cover] { display: none; }
+.reel-inline { inset: 0 0 15px; }
+.reel-inline-video { height: 100%; max-height: 100%; border-radius: 13px; }
+.reel-inline-credit { inset: auto 2px -17px; }
+@media (max-width: 780px) {
+  .has-clip .reel-art { max-height: 224px; }
+  .reel-origin { font-size: .7rem; }
+}
+@media (max-height: 650px) {
+  .has-clip .reel-art { min-height: 84px; }
+  .reel-art { margin-block: 4px 7px; }
+  .reel-caption { margin-top: 6px; }
+}

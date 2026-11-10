@@ -1,0 +1,53 @@
+[
+  {
+    "id": "lesson-carnegie-name-cue",
+    "topic": "mind",
+    "kind": "book",
+    "title": "Give a new name a second use.",
+    "kicker": "Remember names by using them naturally",
+    "source": {"title": "How to Win Friends and Influence People · Remember names", "byline": "Dale Carnegie", "url": "https://www.dalecarnegie.com/en/culture"},
+    "tags": ["Dale Carnegie", "conversation", "memory"],
+    "steps": [
+      {"label": "The moment you miss it", "text": "Introductions often happen while you are thinking about what to say next. Carnegie treats remembering someone’s name as a small way of recognizing them as a person."},
+      {"label": "Use it once", "text": "If someone introduces themselves as Morgan, answer naturally: ‘Good to meet you, Morgan.’ If you missed the pronunciation, ask them to say it again. Then listen for a detail that connects the name to the conversation."},
+      {"label": "Practice the recall", "text": "Before you meet again, see if you can retrieve the name and the detail. A single natural use and a later recall attempt give you two chances to pay attention."}
+    ],
+    "question": "What can you do immediately after hearing someone’s name to help remember it?",
+    "answer": "Use it naturally once and connect it to a detail you heard from them.",
+    "takeaway": "Use the name once, connect it to a real detail, and recall it later."
+  },
+  {
+    "id": "lesson-covey-finish-line",
+    "topic": "practice",
+    "kind": "book",
+    "title": "Write the finish line before you start.",
+    "kicker": "Begin with the end in mind",
+    "source": {"title": "The 7 Habits of Highly Effective People · Habit 2", "byline": "Stephen R. Covey", "url": "https://www.franklincovey.com/courses/the-7-habits/habit-2/"},
+    "tags": ["Stephen Covey", "planning", "goals"],
+    "steps": [
+      {"label": "The open task", "text": "‘Make a training guide’ can mean a two-page reference or a forty-page manual. Covey’s second habit asks you to picture the desired result before deciding how to get there."},
+      {"label": "An observable result", "text": "‘A new technician can run the three checks without calling me’ gives the guide a test. It tells you what to include and when another page is adding work instead of clarity."},
+      {"label": "Try it", "text": "Before your next project, write one sentence that describes what a successful result lets someone do. Ask the person who needs the work whether that matches what they had in mind."}
+    ],
+    "question": "What makes a useful finish line for a project?",
+    "answer": "An observable result that you and the people who need the work can recognize.",
+    "takeaway": "Name what someone can do when the work is finished."
+  },
+  {
+    "id": "lesson-sun-tzu-preparation-threshold",
+    "topic": "thinking",
+    "kind": "book",
+    "title": "Pick your go signal before the pressure hits.",
+    "kicker": "Make readiness visible before committing",
+    "source": {"title": "The Art of War · Tactical Dispositions, section 15", "byline": "Sun Tzu · translated by Lionel Giles", "url": "https://www.gutenberg.org/ebooks/132"},
+    "tags": ["Sun Tzu", "strategy", "preparation"],
+    "steps": [
+      {"label": "Prepare before commitment", "text": "Sun Tzu puts preparation ahead of committing to battle. A practical application is to decide what must be true before you take an expensive or hard-to-reverse step."},
+      {"label": "A workable signal", "text": "You are considering a change to a shared lab. Pick a go signal in advance: the test works on a spare setup, and a teammate has walked through the rollback with you."},
+      {"label": "Use the signal", "text": "If a deadline approaches and the check is still missing, you can explain exactly what remains. The signal gives you a way to discuss readiness when everyone feels pressure to move."}
+    ],
+    "question": "Why pick a go signal before you are under pressure?",
+    "answer": "It gives you an observable readiness test when urgency might otherwise drive the decision.",
+    "takeaway": "Decide which concrete checks make you ready before committing."
+  }
+]

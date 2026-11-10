@@ -1,7 +1,8 @@
-import { decodeState, mergeState, newState, validCard } from './learning.js?v=6';
+import { decodeState, mergeRecord, mergeState, newState, validCard } from './learning.js?v=7';
 
 const STATE_KEY = 'mind-expansion.state.v1';
 const POOL_KEY = 'mind-expansion.pool.v1';
+const CATALOG_KEY = 'mind-expansion.catalog.v1';
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -45,6 +46,7 @@ export async function openLibrary() {
   const dates = reader.objectStore('days').getAllKeys();
   const cards = reader.objectStore('days').getAll();
   const cached = reader.objectStore('cache').get(POOL_KEY);
+  const cachedCatalog = reader.objectStore('cache').get(CATALOG_KEY);
   await completion;
   const loaded = newState();
   for (const record of records.result) loaded.records[record.card.id] = record;
@@ -60,13 +62,9 @@ export async function openLibrary() {
     for (const [key, record] of Object.entries(changes.records)) {
       const request = recordStore.get(key);
       request.onsuccess = () => {
-        const prior = request.result;
-        if (prior && Date.parse(prior.updatedAt) > Date.parse(record.updatedAt)) {
-          updated.records[key] = prior;
-          return;
-        }
-        recordStore.put(record, key);
-        updated.records[key] = record;
+        const merged = mergeRecord(request.result, record);
+        recordStore.put(merged, key);
+        updated.records[key] = merged;
       };
     }
     for (const [date, card] of Object.entries(changes.days)) {
@@ -91,13 +89,15 @@ export async function openLibrary() {
   } catch {
     // Browser storage from an earlier session is optional.
   }
+  async function writeCache(key, value) {
+    const transaction = db.transaction('cache', 'readwrite');
+    const completion = done(transaction);
+    transaction.objectStore('cache').put(value, key);
+    await completion;
+  }
   return {
-    initial, pool, write,
-    async writePool(value) {
-      const transaction = db.transaction('cache', 'readwrite');
-      const completion = done(transaction);
-      transaction.objectStore('cache').put(value, POOL_KEY);
-      await completion;
-    },
+    initial, pool, write, catalog: (cachedCatalog.result || []).filter(validCard),
+    writePool: value => writeCache(POOL_KEY, value),
+    writeCatalog: value => writeCache(CATALOG_KEY, value),
   };
 }

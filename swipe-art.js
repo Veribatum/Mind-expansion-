@@ -1,4 +1,4 @@
-import { DEEP_ART } from './deep-art.js?v=6';
+import { DEEP_ART } from './deep-art.js?v=7';
 
 const PLANE = 'M200 51c-9 0-13 17-16 40l-9 69-88 49v18l85-22 9 56-35 21v14l54-12 54 12v-14l-35-21 9-56 85 22v-18l-88-49-9-69c-3-23-7-40-16-40Z';
 

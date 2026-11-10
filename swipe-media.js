@@ -1,12 +1,17 @@
-import { normalize } from './learning.js?v=6';
+import { normalize } from './learning.js?v=7';
 
 const SVS = 'https://svs.gsfc.nasa.gov';
 const NASA_CREDIT = 'NASA Scientific Visualization Studio';
 const PUBLIC_DOMAIN = SVS + '/help/';
 const FEATURED_CLIPS = {
+  'voss-mirror': {
+    title: 'Try a mirror in conversation', url: './media/voss-mirror.mp4', poster: './media/voss-mirror.jpg',
+    page: 'https://info.blackswanltd.com/hubfs/The%20Black%20Swan%20Group%20Leadership%20Guide.pdf',
+    credit: 'Mind Expansion · animated example', license: 'Original animation', duration: 12, local: true,
+  },
   'beluga-half-sleep': {
     title: 'Beluga swimming at Oceanogràfic Valencia',
-    url: './media/beluga.mp4',
+    url: './media/beluga.mp4', poster: './media/beluga.jpg', duration: 10,
     page: 'https://commons.wikimedia.org/wiki/File:Beluga_Oceanografic.webm',
     credit: 'Toniher · Wikimedia Commons',
     license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
@@ -15,7 +20,7 @@ const FEATURED_CLIPS = {
   },
   'octopus-hunting-team': {
     title: 'Octopus and fish hunting together in the Red Sea',
-    url: './media/octopus-hunt.mp4?v=2',
+    url: './media/octopus-hunt.mp4?v=2', poster: './media/octopus-hunt.jpg', duration: 9,
     page: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11541198/',
     credit: 'Eduardo Sampaio and colleagues · Supplementary Video 1',
     license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',

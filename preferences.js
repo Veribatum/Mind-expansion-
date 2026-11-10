@@ -1,4 +1,4 @@
-import { normalize } from './learning.js?v=6';
+import { normalize } from './learning.js?v=7';
 
 const feedback = record => record?.feedback || 0;
 const features = card => [

@@ -51,15 +51,22 @@ export function learn(record, day, now = new Date().toISOString()) {
   return { ...record, learned: day, due: addDays(day, 1), updatedAt: now };
 }
 
+export function finishReview(record, day, now = new Date().toISOString()) {
+  return {
+    ...record,
+    reviews: record.reviews + 1,
+    reviewDays: [...new Set([...(record.reviewDays || []), day])].sort(),
+    updatedAt: now,
+  };
+}
+
 export function rate(record, outcome, day, now = new Date().toISOString()) {
   const step = outcome === 'got-it' ? Math.min(record.step + 1, INTERVALS.length - 1) : 0;
   return {
-    ...record,
+    ...finishReview(record, day, now),
     learned: record.learned || day,
     step,
     due: addDays(day, INTERVALS[step]),
-    reviews: record.reviews + 1,
-    updatedAt: now,
   };
 }
 
@@ -67,6 +74,37 @@ export function dueRecords(state, day) {
   return Object.values(state.records)
     .filter(record => record.learned && record.due && record.due <= day)
     .sort((a, b) => a.due.localeCompare(b.due) || a.card.title.localeCompare(b.card.title));
+}
+
+export function progressFor(state, today) {
+  const weekStart = addDays(today, -((dayNumber(today) + 3) % 7));
+  const activity = new Map();
+  const on = day => {
+    if (!activity.has(day)) activity.set(day, { learned: 0, reviewed: 0 });
+    return activity.get(day);
+  };
+  let total = 0;
+  for (const record of Object.values(state.records)) {
+    if (record.learned && record.learned <= today) {
+      on(record.learned).learned++;
+      total++;
+    }
+    for (const day of new Set(record.reviewDays || [])) {
+      if (day <= today) on(day).reviewed++;
+    }
+  }
+  let streak = 0;
+  let day = activity.has(today) ? today : addDays(today, -1);
+  while (activity.has(day)) {
+    streak++;
+    day = addDays(day, -1);
+  }
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(weekStart, i);
+    return { date, ...(activity.get(date) || { learned: 0, reviewed: 0 }) };
+  });
+  return { week, total, streak, learnedThisWeek: week.reduce((sum, item) => sum + item.learned, 0),
+    activeToday: activity.has(today), due: dueRecords(state, today).length };
 }
 
 export function seenCards(state, omitDay = '') {
@@ -151,6 +189,8 @@ export function decodeState(value) {
       || (record.learned ? !validDay(record.due) : record.due !== null)
       || !Number.isInteger(record.step) || record.step < 0 || record.step >= INTERVALS.length
       || !Number.isSafeInteger(record.reviews) || record.reviews < 0
+      || (record.reviewDays !== undefined && (!Array.isArray(record.reviewDays)
+        || record.reviewDays.length > record.reviews || !record.reviewDays.every(validDay)))
       || !stringWithin(record.note, 3000) || !nonempty(record.updatedAt, 40)
       || !Number.isFinite(Date.parse(record.updatedAt))) {
       throw new Error('This backup contains a record the app can’t read.');
@@ -166,11 +206,18 @@ export function decodeState(value) {
   return state;
 }
 
+export function mergeRecord(prior, record) {
+  if (!prior) return record;
+  const latest = Date.parse(record.updatedAt) > Date.parse(prior.updatedAt) ? record : prior;
+  const days = [...new Set([...(prior.reviewDays || []), ...(record.reviewDays || [])])].sort();
+  if (!days.length || (latest.reviewDays?.length === days.length && latest.reviewDays.every((day, i) => day === days[i]))) return latest;
+  return { ...latest, reviews: Math.max(prior.reviews, record.reviews, days.length), reviewDays: days };
+}
+
 export function mergeState(current, incoming) {
   const records = { ...current.records };
   for (const [id, record] of Object.entries(incoming.records)) {
-    const prior = records[id];
-    if (!prior || Date.parse(record.updatedAt) > Date.parse(prior.updatedAt)) records[id] = record;
+    records[id] = mergeRecord(records[id], record);
   }
   return { version: VERSION, records, days: { ...incoming.days, ...current.days } };
 }

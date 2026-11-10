@@ -1,0 +1,7 @@
+CREATE TABLE `lessons` (
+  `seq` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id` TEXT NOT NULL UNIQUE,
+  `title_key` TEXT NOT NULL UNIQUE,
+  `subject_key` TEXT NOT NULL UNIQUE,
+  `body` TEXT NOT NULL
+);

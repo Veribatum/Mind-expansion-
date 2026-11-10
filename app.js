@@ -1,14 +1,15 @@
 import {
-  TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, learn, matches, mergeState,
-  newRecord, newState, rate, reviewDate, validCard,
-} from './learning.js?v=6';
-import { selectIdea } from './feed.js?v=6';
-import { mountSwipe } from './swipe.js?v=6';
-import { evidenceDetails } from './evidence.js?v=6';
-import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=6';
-import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=6';
+  TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, finishReview, learn, matches, mergeState,
+  newRecord, newState, progressFor, rate, reviewDate, validCard,
+} from './learning.js?v=7';
+import { fetchCatalog } from './catalog.js?v=7';
+import { selectIdea } from './feed.js?v=7';
+import { mountSwipe } from './swipe.js?v=7';
+import { evidenceDetails } from './evidence.js?v=7';
+import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=7';
+import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=7';
 
-const ROUTES = ['feed', 'today', 'review', 'library', 'settings'];
+const ROUTES = ['feed', 'today', 'progress', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
 const app = document.querySelector('#app');
 const main = document.querySelector('#main');
@@ -18,6 +19,8 @@ let storageOK = true;
 let state = newState();
 let library;
 let pool = [];
+let catalog = [];
+let catalogCheckedAt = 0;
 let channel;
 let limit = 30;
 let today = dayKey();
@@ -169,6 +172,39 @@ function stat(href, symbol, title, summary) {
     <span><strong>${title}</strong><small>${summary}</small></span>${icon('arrow')}</a>`;
 }
 
+function progressView() {
+  const progress = progressFor(state, today);
+  const dayLabel = date => new Date(date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short' });
+  const stats = [
+    ['spark', progress.learnedThisWeek, 'Lessons this week', 'violet'],
+    ['flame', progress.streak, 'Day streak', 'amber'],
+    ['review', progress.due, 'Reviews due', 'blue'],
+  ];
+  return heading('Your learning', 'Progress', 'A day counts when you finish a lesson or complete a review.')
+    + `<section class="progress-stats" aria-label="Learning totals">${stats.map(([symbol, value, label, tone]) =>
+      `<div class="progress-stat" data-tone="${tone}">${icon(symbol)}<strong>${value}</strong><span>${label}</span></div>`).join('')}</section>
+    <section class="panel progress-week" aria-labelledby="week-heading">
+      <div class="progress-week-top"><div><p class="eyebrow">${reviewDate(progress.week[0].date)} – ${reviewDate(progress.week.at(-1).date)}</p>
+      <h2 id="week-heading">This week</h2></div><span class="progress-total">${progress.total} learned overall</span></div>
+      <ol class="week-days">${progress.week.map(({ date, learned, reviewed }) => {
+        const active = learned > 0 || reviewed > 0;
+        const label = `${dayLabel(date)}, ${reviewDate(date)}. ${learned} learned, ${reviewed} reviewed.`;
+        return `<li class="week-day" data-active="${active}" aria-current="${date === today ? 'date' : 'false'}" aria-label="${escape(label)}">
+          <span class="week-day-mark" aria-hidden="true">${active ? icon('check') : '<span></span>'}</span>
+          <span>${dayLabel(date)}</span><small>${new Date(date + 'T12:00:00').getDate()}</small></li>`;
+      }).join('')}</ol>
+      <div class="button-row"><a href="${progress.due ? '#review' : '#feed'}" class="button primary">${icon(progress.due ? 'review' : 'feed')}
+      ${progress.due ? 'Start review' : progress.activeToday ? 'Keep exploring' : 'Learn an idea'}</a></div>
+    </section>`;
+}
+
+function reflectProgress() {
+  const progress = progressFor(state, today);
+  const badge = document.querySelector('[data-streak]');
+  badge.textContent = progress.streak;
+  badge.closest('a').setAttribute('aria-label', `Progress, ${progress.streak} day streak`);
+}
+
 function todayView() {
   const date = new Date(today + 'T12:00:00').toLocaleDateString(undefined, {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
@@ -180,6 +216,7 @@ function todayView() {
   const learned = Object.values(state.records).filter(record => record.learned).length;
   const dashboard = `<section class="dashboard" aria-label="Your learning">
     ${stat('feed', 'feed', 'Swipe through ideas', 'Book ideas, practical skills & surprising stories')}
+    ${stat('progress', 'progress', 'Your progress', 'Lessons and learning streak')}
     ${stat('review', 'review', due ? `${due} due for review` : 'Review queue', due ? 'Try a quick recall' : 'You’re caught up')}
     ${stat('library', 'library', 'Your library', `${learned} ${learned === 1 ? 'idea' : 'ideas'} learned`)}
     </section>`;
@@ -218,7 +255,7 @@ function reviewView() {
     : onSchedule
       ? `<button type="button" class="button" data-rate="again" data-id="${card.id}">Again tomorrow</button>
          <button type="button" class="button primary" data-rate="got-it" data-id="${card.id}">${icon('check')} Got it</button>`
-      : '<button type="button" class="button primary" data-end-practice>Done</button>';
+      : `<button type="button" class="button primary" data-finish-practice="${card.id}">${icon('check')} Done</button>`;
   return top + `<section class="panel review-panel"><p class="eyebrow">${onSchedule ? 'Due now' : 'Quick practice'} · ${TOPICS[card.topic]}</p>
     <h2>${escape(card.prompt)}</h2><p>Try saying the answer or thinking it through before you reveal it.</p>
     ${showAnswer ? `<div class="review-answer" tabindex="-1"><p class="eyebrow">The answer</p><p>${escape(card.answer)}</p></div>` : ''}
@@ -288,7 +325,7 @@ function settingsView() {
       <section class="panel"><p class="eyebrow">Home screen</p><h2>Make it a daily stop</h2>
         <p>On iPhone, open this page in Safari, tap Share, then Add to Home Screen. On Android or desktop, use Install app or Add to Home screen in the browser menu when available.</p></section>
       <section class="panel"><p class="eyebrow">The daily edition</p><h2>Where ideas come from</h2>
-        <p>Mind Expansion mixes practical lessons from books, negotiation and conversation skills, unusual history, and animal research. Each book idea is explained in original words with an example to try. More source lessons are discovered through Simple English Wikipedia when available. Each card links to its source. The Feed adds illustrated scenes, credited clips where available, and more ideas as you scroll. Today keeps one reading set aside for the day.</p></section>
+        <p>Mind Expansion mixes practical lessons from books, negotiation and conversation skills, unusual history, and animal research. Each book idea is explained in original words with an example to try. New editions appear in the feed as they are published. Simple English Wikipedia also supplies source lessons when available. Each card links to its source. The Feed adds illustrated scenes, credited clips where available, and more ideas as you scroll. Today keeps one reading set aside for the day.</p></section>
     </div>`;
 }
 
@@ -304,8 +341,22 @@ async function changeFeedRecord(card, action) {
     ...record, saved: !record.saved, updatedAt: new Date().toISOString(),
   });
   const record = state.records[card.id];
+  reflectProgress();
   if (storageOK) say(action === 'learn' ? 'Learned. Your first review is tomorrow.'
     : record.saved ? 'Saved to your library.' : 'Bookmark removed.');
+}
+
+async function refreshCatalog(force = false) {
+  if (!navigator.onLine || (!force && Date.now() - catalogCheckedAt < 120_000)) return;
+  catalogCheckedAt = Date.now();
+  try {
+    const result = await fetchCatalog();
+    catalog = result.cards;
+    if (library) void library.writeCatalog(catalog).catch(() => {});
+    if (route === 'feed') render();
+  } catch {
+    // The last good catalog and built-in lessons are still available.
+  }
 }
 
 function rememberPool(cards) {
@@ -314,24 +365,26 @@ function rememberPool(cards) {
 }
 
 function render() {
-  const views = { today: todayView, review: reviewView, library: libraryView, settings: settingsView };
+  const views = { today: todayView, progress: progressView, review: reviewView, library: libraryView, settings: settingsView };
   app.classList.toggle('is-feed', route === 'feed');
+  document.body.classList.toggle('feed-open', route === 'feed');
   if (route === 'feed') {
     if (!swipe || swipeDay !== today) {
       releaseSwipe();
       swipeDay = today;
       swipe = mountSwipe(app, {
         day: today, icon, escape, onAction: changeFeedRecord, onPool: rememberPool,
-        getRecord: id => state.records[id], getRecords: () => state.records, onFeedback: changeFeedback, getDue: () => dueRecords(state, today).length,
+        getRecord: id => state.records[id], getRecords: () => state.records, onFeedback: changeFeedback,
+        getDue: () => dueRecords(state, today).length, getProgress: () => progressFor(state, today),
         resume: swipeResume,
       });
     }
-    swipe.update(state.days[today], pool, pendingDay === today || attemptedDay !== today);
+    swipe.update(state.days[today], pool, catalog);
   } else {
     releaseSwipe();
     app.innerHTML = (!storageOK ? '<p class="storage-warning">Browser storage is unavailable. Export a backup to keep any changes made here.</p>' : '') + views[route]();
   }
-  app.setAttribute('aria-busy', (route === 'today' || route === 'feed') && pendingDay === today ? 'true' : 'false');
+  app.setAttribute('aria-busy', route === 'today' && pendingDay === today ? 'true' : 'false');
   for (const link of document.querySelectorAll('[data-route]')) {
     if (link.dataset.route === route) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -341,6 +394,7 @@ function render() {
     badge.hidden = !count;
     badge.textContent = count;
   }
+  reflectProgress();
   document.title = (route === 'feed' || route === 'today') ? 'Mind Expansion' : route[0].toUpperCase() + route.slice(1) + ' · Mind Expansion';
 }
 
@@ -351,7 +405,7 @@ async function ensureToday(retry = false) {
   attemptedDay = day;
   if (route === 'today' || route === 'feed') render();
   try {
-    const result = await selectIdea({ state, day, pool, allowNetwork: navigator.onLine });
+    const result = await selectIdea({ state, day, pool, catalog, allowNetwork: navigator.onLine });
     const card = result.card ? authoredLesson(result.card) : null;
     if (card && !state.days[day]) {
       state.days[day] = card;
@@ -451,6 +505,14 @@ document.addEventListener('click', async event => {
     practiceId = data.practice;
     revealed = '';
     go('review');
+  } else if (data.finishPractice) {
+    const card = getCard(data.finishPractice);
+    if (!card || revealed !== card.id) return;
+    await updateRecord(card, record => finishReview(record, today));
+    practiceId = '';
+    revealed = '';
+    go('today');
+    if (storageOK) say('Practice counted toward your progress.');
   } else if (data.endPractice !== undefined) {
     practiceId = '';
     revealed = '';
@@ -575,13 +637,28 @@ window.addEventListener('storage', event => {
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') checkDate();
+  if (document.visibilityState === 'visible') {
+    checkDate();
+    void refreshCatalog();
+  }
 });
 window.addEventListener('focus', checkDate);
 window.setInterval(checkDate, 30_000);
-window.addEventListener('online', () => { if (!state.days[today]) void ensureToday(true); });
+window.addEventListener('online', () => {
+  void refreshCatalog(true);
+  if (!state.days[today]) void ensureToday(true);
+});
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(registration => {
+    let checkedAt = Date.now();
+    const checkForUpdate = () => {
+      if (document.hidden || Date.now() - checkedAt < 60_000) return;
+      checkedAt = Date.now();
+      void registration.update().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', checkForUpdate);
+    window.addEventListener('pageshow', checkForUpdate);
+  }).catch(() => {});
 }
 
 async function start() {
@@ -589,6 +666,7 @@ async function start() {
     library = await openLibrary();
     state = upgradeLessonState(library.initial);
     pool = library.pool.map(authoredLesson);
+    catalog = library.catalog;
     if ('BroadcastChannel' in window) {
       channel = new BroadcastChannel('mind-expansion.library');
       channel.onmessage = event => acceptUpdates(event.data);
@@ -601,6 +679,7 @@ async function start() {
     }
   }
   render();
+  void refreshCatalog();
   void ensureToday();
 }
 

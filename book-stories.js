@@ -86,6 +86,36 @@ export const BOOK_STORIES = [
       ['A practical experiment', 'Stand up or move comfortably for a moment. Then replace the verdict with: “What is the smallest useful step I can take next?” Name an actual action rather than forcing a positive mood.'],
       ['Check what happened', 'Try the action, then ask whether the change helped you start. This is a coaching exercise, not a medical treatment or proof that attitude can solve every problem.'],
     ], 'What makes a replacement question useful?', 'It directs attention toward a specific next action instead of a sweeping judgment about yourself.'),
+  lesson('sun-tzu-solve-without-a-fight', 'thinking', 'Win the outcome before the argument.', 'The Art of War · Attack by Stratagem', 'Sun Tzu · translated by Lionel Giles',
+    'https://www.gutenberg.org/ebooks/132', ['strategy', 'Sun Tzu', 'conflict', 'negotiation'], [
+      ['The idea', 'Sun Tzu prizes reaching the objective while preserving what would be damaged in a fight. Winning every clash can still cost more than the objective is worth.'],
+      ['At work', 'Two teams want the same test bench all week. Before fighting over who outranks whom, ask what each actually needs. One needs a three-hour run; the other needs access only after a shipment arrives.'],
+      ['Try it', 'Name what would count as success for each side before taking a position. If a schedule solves both problems, keep the bench and the relationship intact.'],
+    ], 'What should you identify before you get drawn into a fight over a position?', 'The underlying outcomes each side needs and whether they can be achieved together.'),
+  lesson('sun-tzu-know-both-sides', 'thinking', 'Know your limits and theirs.', 'The Art of War · Attack by Stratagem, section 18', 'Sun Tzu · translated by Lionel Giles',
+    'https://www.gutenberg.org/ebooks/132', ['strategy', 'Sun Tzu', 'preparation', 'negotiation'], [
+      ['Two kinds of preparation', 'Sun Tzu pairs knowing your own side with knowing the other side. A polished plan covers only half the picture if it depends on assumptions about the people or conditions you face.'],
+      ['Make two columns', 'Before proposing a deadline, list what your team can commit to and what the other team needs to make it work. You may have enough staff; they may still be waiting for an approval.'],
+      ['Test an assumption', 'Turn one guess into a question. “Who signs off before we can start?” is more useful than assuming enthusiasm in the meeting means readiness.'],
+    ], 'What information should you gather alongside your own capabilities?', 'The other side’s real constraints and priorities, especially the ones your plan depends on.'),
+  lesson('sun-tzu-like-water', 'thinking', 'A plan should move like water.', 'The Art of War · Weak Points and Strong', 'Sun Tzu · translated by Lionel Giles',
+    'https://www.gutenberg.org/ebooks/132', ['strategy', 'Sun Tzu', 'adaptation', 'problem solving'], [
+      ['Watch the terrain', 'In chapter six, Sun Tzu compares tactics to water. Water takes its path from the ground it meets. A tactic that worked once owes part of its success to those particular conditions.'],
+      ['Spot the change', 'A lunchtime training session worked for a small team. It falls apart when a second shift joins. The goal is shared practice; the old method depended on everyone having the same break.'],
+      ['Try it', 'Write down what changed, then keep the goal and change one part of the method. Two shorter sessions could reach the same people without fighting the schedule.'],
+    ], 'What does Sun Tzu’s water comparison suggest when conditions change?', 'Shape the method to the new conditions instead of repeating a tactic just because it worked before.'),
+  lesson('carnegie-speak-to-their-interests', 'mind', 'Start where the other person cares.', 'How to Win Friends and Influence People · Speak to their interests', 'Dale Carnegie',
+    'https://www.dalecarnegie.com/en/culture', ['conversation', 'communication', 'Dale Carnegie', 'self improvement'], [
+      ['Find their stake', 'Carnegie advises framing a conversation around the other person’s interests. First find out what matters to them so the explanation answers a question they actually have.'],
+      ['Same idea, clearer reason', 'Instead of pitching a new checklist as “more standardized,” tell the person who runs the handoff how it will prevent calls after they leave. Then ask which handoff step still causes them trouble.'],
+      ['Try it', 'Before a request, finish the sentence: “This might matter to them because ___.” Check your guess in the conversation and use the answer to make a more relevant proposal.'],
+    ], 'How do you make your proposal relevant without guessing what the other person values?', 'Ask what matters to them, then explain the real connection to your proposal.'),
+  lesson('clear-second-mistake', 'practice', 'Make the comeback smaller.', 'Atomic Habits · Avoid the Second Mistake', 'James Clear',
+    'https://jamesclear.com/second-mistake', ['habits', 'James Clear', 'self improvement', 'consistency'], [
+      ['The slippery part', 'One missed practice session is a gap. The next choice is when the gap can become a new pattern. James Clear emphasizes returning at the next realistic opportunity.'],
+      ['Shrink the restart', 'You missed yesterday’s planned reading. If the next day is packed, read a page after coffee. Your job is to restore the cue and action, so the next full session has a place to start.'],
+      ['Try it', 'Write a minimum version of one routine and the next cue you can use. Choose something you would actually do on a rough day.'],
+    ], 'What is the useful move after missing a routine once?', 'Restart at the next realistic cue, even with a smaller version.'),
   lesson('ghost-army', 'culture', 'The Army that brought inflatable tanks to a real war.', 'The Ghost Army · World War II', 'U.S. Army · Fort Leonard Wood',
     'https://www.army.mil/article/247350/fort_leonard_wood_examines_wwii_ghost_army_deception_tactics', ['history', 'World War II', 'deception', 'military'], [
       ['The strange job', 'The U.S. Army’s 23rd Headquarters Special Troops included roughly 1,100 people whose job was to make the enemy perceive forces that were not really there.'],

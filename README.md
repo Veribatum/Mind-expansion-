@@ -43,3 +43,13 @@ Like / Dislike are independent of Save / Learn. A rating is stored as `feedback`
 Recommendations score shared tags, author, topic and content kind; dislikes exclude the exact idea and reduce related content. Learned ideas are demoted. Every fourth selection preserves an exploration slot, and at most two consecutive recommendations share a topic when alternatives exist. Rating an active card only rebuilds its upcoming tail. Discovery category ordering also uses these preferences with periodic unpersonalized exploration. Source availability and existing source quality filters still determine whether new network lessons can be added.
 
 Validation: `node --test` covers valid lessons, relevance changes, dislikes/undo, legacy backups and merges, mixed opening editions, discovery preferences, and the existing archive/review/media behavior. Browser QA covers desktop and 390px phone UI, immediate reordering, persistence after reload, mutual exclusion of ratings, and Settings undo/reset.
+
+## Live catalog and progress
+
+The installed app uses the same origin, manifest ID, start URL, and IndexedDB library. The Progress view uses the local calendar and counts a learning day when a lesson is marked learned or a review is finished. Existing learned dates count. Review dates are recorded from this release onward.
+
+`node --test` validates the existing feed and archive along with the catalog, progress, and media byte ranges. `node scripts/build-site.mjs` produces the self-contained hosted worker. The root files can also be served statically. A static copy uses the bundled readings and on-demand discovery.
+
+The private hosted site uses the `DB` binding and the `drizzle` migration for its shared lesson catalog. `GET /api/lessons` reads the newest entries and supports paging. The authenticated `/mcp` tools `list_lessons` and `publish_lessons` provide the background task with the current index and an append-only writer. Publishing rejects invalid source links and ignores duplicate IDs, titles, and concepts. The launch lessons in `data/launch-lessons.json` are written through that same path. The catalog does not contain personal ratings, notes, or reviews.
+
+A linked content task reads the existing index, verifies primary sources, and writes original one-minute lessons in batches of up to eight. Include a worked example or mechanism, an exact author and source link, and a recall question. Read back the additions before reporting success. Use the site's managed connection, keep credentials out of prompts and source, and skip topics that cannot be verified.

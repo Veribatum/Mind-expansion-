@@ -1,15 +1,19 @@
-import { BOOK_STORIES } from './book-stories.js?v=6';
-import { rankCards } from './preferences.js?v=6';
-import { EDITORIAL } from './cards.js?v=6';
-import { authoredLesson, isLesson } from './lessons.js?v=6';
-import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=6';
-import { dayNumber, normalize } from './learning.js?v=6';
+import { featuredClip } from './swipe-media.js?v=7';
+import { BOOK_STORIES } from './book-stories.js?v=7';
+import { rankCards } from './preferences.js?v=7';
+import { EDITORIAL } from './cards.js?v=7';
+import { authoredLesson, isLesson } from './lessons.js?v=7';
+import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=7';
+import { dayNumber, normalize } from './learning.js?v=7';
 
 const BOOK_LOOKS = {
   'voss-mirror': ['dialogue', 'violet'], 'voss-label': ['dialogue', 'rose'], 'voss-how-question': ['dialogue', 'blue'],
   'carnegie-interest': ['dialogue', 'mint'], 'carnegie-appreciation': ['dialogue', 'amber'], 'covey-understand': ['dialogue', 'blue'],
   'hill-definite-purpose': ['plan', 'amber'], 'hill-persistence': ['plan', 'rose'], 'covey-influence': ['network', 'mint'],
   'covey-big-rocks': ['clock', 'violet'], 'clear-two-minutes': ['habit', 'mint'], 'newport-deep-break': ['memory', 'blue'],
+  'sun-tzu-solve-without-a-fight': ['plan', 'amber'], 'sun-tzu-know-both-sides': ['network', 'violet'],
+  'sun-tzu-like-water': ['ocean', 'blue'], 'carnegie-speak-to-their-interests': ['dialogue', 'rose'],
+  'clear-second-mistake': ['habit', 'blue'],
   'robbins-state': ['network', 'rose'], 'ghost-army': ['tank', 'amber'], 'mincemeat': ['plan', 'blue'],
   'skinner-pigeons': ['pigeon', 'violet'], 'dazzle-ships': ['ship', 'mint'],
 };
@@ -155,7 +159,7 @@ export function cardKey(card) {
   return normalize(card.id.startsWith('simple-wiki-') ? card.title : card.kicker || card.title);
 }
 
-export function openingCards(daily, pool, day, records = {}) {
+export function openingCards(daily, pool, day, records = {}, catalog = []) {
   const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS, ...BOOK_STORIES].map(card => [card.id, card]));
   const editions = [
     ['voss-mirror', 'ghost-army', 'hill-definite-purpose', 'beluga-half-sleep', 'covey-big-rocks'],
@@ -165,18 +169,26 @@ export function openingCards(daily, pool, day, records = {}) {
   ];
   const offset = ((dayNumber(day) - dayNumber('2026-11-05')) % editions.length + editions.length) % editions.length;
   const ordered = [...editions.slice(offset), ...editions.slice(0, offset)].flat();
+  const featuredBooks = ['sun-tzu-like-water', 'carnegie-speak-to-their-interests', 'sun-tzu-know-both-sides', 'sun-tzu-solve-without-a-fight'];
+  const book = byId.get(featuredBooks[offset]);
   const candidates = [
-    ...ordered.slice(0, 5).map(id => byId.get(id)), daily,
+    book, ...catalog.slice(0, 3), ...ordered.slice(0, 5).map(id => byId.get(id)), daily,
     ...ordered.slice(5).map(id => byId.get(id)), ...BOOK_STORIES,
-    ...DEEP_CARDS.filter(card => card.id !== 'cold-war-art'), ...EDITORIAL, ...FEATURED, ...pool.filter(isLesson),
+    ...DEEP_CARDS.filter(card => card.id !== 'cold-war-art'), ...EDITORIAL, ...FEATURED, ...catalog.slice(3), ...pool.filter(isLesson),
   ].filter(card => card && card.id !== 'cold-war-art').map(authoredLesson).filter(isLesson);
   const ids = new Set();
   const keys = new Set();
-  return rankCards(candidates.filter(card => {
+  const ranked = rankCards(candidates.filter(card => {
     const key = cardKey(card);
     if (ids.has(card.id) || keys.has(key)) return false;
     ids.add(card.id);
     keys.add(key);
     return true;
   }), records);
+  const clips = ['beluga-half-sleep', 'octopus-hunting-team', 'voss-mirror'];
+  const first = ((dayNumber(day) % clips.length) + clips.length) % clips.length;
+  const rotation = [...clips.slice(first), ...clips.slice(0, first)];
+  const video = rotation.map(id => ranked.find(card => card.id === id && featuredClip(card)?.local))
+    .filter(Boolean).sort((a, b) => Number(!!records[a.id]?.learned) - Number(!!records[b.id]?.learned))[0];
+  return video ? [video, ...ranked.filter(card => card !== video)] : ranked;
 }

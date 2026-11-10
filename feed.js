@@ -1,10 +1,10 @@
-import { BOOK_STORIES } from './book-stories.js?v=6';
-import { discoveryOrder, rankCards } from './preferences.js?v=6';
-import { EDITORIAL } from './cards.js?v=6';
-import { DEEP_CARDS } from './deep-cuts.js?v=6';
-import { authoredLesson, isLesson } from './lessons.js?v=6';
-import { buildSourceLesson } from './source-lessons.js?v=6';
-import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=6';
+import { BOOK_STORIES } from './book-stories.js?v=7';
+import { discoveryOrder, rankCards } from './preferences.js?v=7';
+import { EDITORIAL } from './cards.js?v=7';
+import { DEEP_CARDS } from './deep-cuts.js?v=7';
+import { authoredLesson, isLesson } from './lessons.js?v=7';
+import { buildSourceLesson } from './source-lessons.js?v=7';
+import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=7';
 
 const WIKI = 'https://simple.wikipedia.org/w/api.php';
 const ROTATION = [
@@ -98,7 +98,7 @@ function available(card, seen) {
 }
 
 export async function selectIdea({
-  state, day, pool = [], fetcher = fetch, allowNetwork = true, timeout = 5200,
+  state, day, pool = [], catalog = [], fetcher = fetch, allowNetwork = true, timeout = 5200,
 }) {
   const seen = seenCards(state, day);
   for (const card of [...Object.values(state.days), ...Object.values(state.records).map(r => r.card)]) {
@@ -108,6 +108,8 @@ export async function selectIdea({
   const dayIndex = dayNumber(day);
   const personalized = Object.values(state.records).some(r => r.feedback);
   const pick = items => items[personalized ? 0 : dayIndex % items.length];
+  const fresh = rankCards(catalog.filter(card => isLesson(card) && available(card, seen)), state.records);
+  if (fresh.length) return { card: pick(fresh), pool };
   if (!seen.size && editorial.length) return { card: editorial[0], pool };
   if (dayIndex % 3 === 0 && editorial.length) {
     return { card: pick(editorial), pool };

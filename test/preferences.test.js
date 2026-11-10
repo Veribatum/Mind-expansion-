@@ -10,7 +10,7 @@ const byId = id => BOOK_STORIES.find(c => c.id === id);
 const voted = (id, feedback, updatedAt = '2026-11-05T12:00:00Z') => ({ ...newRecord(byId(id)), feedback, updatedAt });
 
 test('book and history lessons fit the archive schema and contain an example or mechanism', () => {
-  assert.equal(BOOK_STORIES.length, 17);
+  assert.ok(BOOK_STORIES.filter(card => card.source.byline.startsWith('Sun Tzu')).length >= 3);
   BOOK_STORIES.forEach(card => {
     assert.ok(validCard(card), card.id);
     assert.ok(card.lesson.steps.length >= 3);
