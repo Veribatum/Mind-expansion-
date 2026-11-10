@@ -3,50 +3,6 @@ import { normalize, validCard } from '../learning.js';
 const PAGE_SIZE = 24;
 const MAX_BATCH = 8;
 const MAX_BODY = 64 * 1024;
-const PROTOCOL = '2026-07-28';
-const RPC_TOOLS = [
-  {
-    name: 'list_lessons',
-    description: 'Read the latest published lessons and the bundled lesson index. Use the returned next cursor to check older catalog pages for duplicates.',
-    inputSchema: {
-      type: 'object', properties: { before: { type: 'integer', minimum: 1 } }, additionalProperties: false,
-    },
-  },
-  {
-    name: 'publish_lessons',
-    description: 'Append up to eight verified original one-minute lessons to this private feed. Repeated IDs, titles, and subjects are skipped. Read them back with list_lessons.',
-    inputSchema: {
-      type: 'object', required: ['lessons'], additionalProperties: false,
-      properties: {
-        lessons: {
-          type: 'array', minItems: 1, maxItems: MAX_BATCH,
-          items: {
-            type: 'object',
-            required: ['id', 'topic', 'kind', 'title', 'kicker', 'source', 'tags', 'steps', 'question', 'answer', 'takeaway'],
-            properties: {
-              id: { type: 'string', pattern: '^lesson-[a-z0-9-]+$' },
-              topic: { enum: ['mind', 'thinking', 'systems', 'science', 'practice', 'animals', 'culture', 'mysteries'] },
-              kind: { enum: ['book', 'research', 'essay'] },
-              title: { type: 'string', maxLength: 160 },
-              kicker: { type: 'string', description: 'Unique subject or concept, distinct from the source title.', maxLength: 180 },
-              source: {
-                type: 'object', required: ['title', 'byline', 'url'],
-                properties: { title: { type: 'string' }, byline: { type: 'string' }, url: { type: 'string', format: 'uri' } },
-              },
-              tags: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 10 },
-              steps: {
-                type: 'array', minItems: 3, maxItems: 4,
-                items: { type: 'object', required: ['label', 'text'], properties: { label: { type: 'string' }, text: { type: 'string' } } },
-              },
-              question: { type: 'string' }, answer: { type: 'string' }, takeaway: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-  },
-];
-
 class CatalogError extends Error {}
 
 function catalogCard(item) {
@@ -112,49 +68,30 @@ async function publishLessons(db, items, bundled) {
 const json = (value, status = 200) => Response.json(value, {
   status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
 });
-const content = (value, isError = false) => ({ content: [{ type: 'text', text: JSON.stringify(value) }], isError });
-
-async function handleMcp(request, db, bundled) {
-  if (request.method !== 'POST') return json({ error: 'Use POST' }, 405);
-  if (request.headers.has('origin') && request.headers.get('origin') !== new URL(request.url).origin) {
-    return json({ error: 'This origin cannot write lessons' }, 403);
-  }
-  let rpc;
+async function handleCatalog(request, url, db, bundled) {
+  if (!db) return json({ error: 'Lesson catalog unavailable' }, 503);
   try {
+    if (request.method === 'GET') {
+      const page = await listLessons(db, url.searchParams.get('before'));
+      return json(url.searchParams.get('index') === '1' ? { ...page, bundled } : page);
+    }
+    if (request.method !== 'POST') return json({ error: 'Use GET or POST' }, 405);
+    // The Sites gateway requires owner or service access. Reject cross-origin
+    // browser submissions and accept only explicit JSON publication requests.
+    const origin = request.headers.get('origin');
+    if (origin && origin !== url.origin) return json({ error: 'Cross-origin write rejected' }, 403);
+    if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+      return json({ error: 'Send application/json' }, 415);
+    }
     if (Number(request.headers.get('content-length')) > MAX_BODY) return json({ error: 'Request too large' }, 413);
     const body = await request.text();
     if (body.length > MAX_BODY) return json({ error: 'Request too large' }, 413);
-    rpc = JSON.parse(body);
-  } catch {
-    return json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Invalid JSON' } }, 400);
-  }
-  const reply = result => json({ jsonrpc: '2.0', id: rpc?.id ?? null, result });
-  switch (rpc?.method) {
-    case 'server/discover': return reply({ supportedVersions: [PROTOCOL], capabilities: { tools: {} } });
-    case 'initialize': return reply({ protocolVersion: rpc.params?.protocolVersion || PROTOCOL,
-      serverInfo: { name: 'mind-expansion', version: '1.0.0' }, capabilities: { tools: {} } });
-    case 'notifications/initialized': return new Response(null, { status: 202 });
-    case 'ping': return reply({});
-    case 'tools/list': return reply({ tools: RPC_TOOLS });
-    case 'tools/call': {
-      const args = rpc.params?.arguments || {};
-      try {
-        if (!db) throw new CatalogError('The lesson database is unavailable.');
-        if (rpc.params.name === 'list_lessons') {
-          const { cards, next } = await listLessons(db, args.before);
-          const summarize = ({ id, title, kicker, source }) => ({ id, title, kicker, source: source.title });
-          const value = { lessons: cards.map(summarize), next };
-          if (args.before == null) value.bundled = bundled;
-          return reply(content(value));
-        }
-        if (rpc.params.name === 'publish_lessons') return reply(content(await publishLessons(db, args.lessons, bundled)));
-        return reply(content({ error: 'Unknown catalog tool' }, true));
-      } catch (error) {
-        if (!(error instanceof CatalogError)) console.error('Catalog tool failed', error);
-        return reply(content({ error: error instanceof CatalogError ? error.message : 'The lesson database is unavailable.' }, true));
-      }
-    }
-    default: return json({ jsonrpc: '2.0', id: rpc?.id ?? null, error: { code: -32601, message: 'Unknown method' } }, 400);
+    return json(await publishLessons(db, JSON.parse(body)?.lessons, bundled));
+  } catch (error) {
+    if (error instanceof CatalogError) return json({ error: error.message }, 400);
+    if (error instanceof SyntaxError) return json({ error: 'Invalid JSON' }, 400);
+    console.error('Catalog request failed', error);
+    return json({ error: 'Lesson catalog unavailable' }, 503);
   }
 }
 
@@ -207,18 +144,7 @@ export function createWorker(assets, bundled) {
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
-      if (url.pathname === '/mcp') return handleMcp(request, env.DB, bundled);
-      if (url.pathname === '/api/lessons') {
-        if (request.method !== 'GET') return json({ error: 'Use GET' }, 405);
-        try {
-          if (!env.DB) return json({ error: 'Lesson catalog unavailable' }, 503);
-          return json(await listLessons(env.DB, url.searchParams.get('before')));
-        } catch (error) {
-          if (error instanceof CatalogError) return json({ error: error.message }, 400);
-          console.error('Catalog read failed', error);
-          return json({ error: 'Lesson catalog unavailable' }, 503);
-        }
-      }
+      if (url.pathname === '/api/lessons') return handleCatalog(request, url, env.DB, bundled);
       if (!['GET', 'HEAD'].includes(request.method)) return json({ error: 'Use GET' }, 405);
       const path = url.pathname === '/' ? '/index.html' : url.pathname;
       if (!Object.hasOwn(assets, path)) return new Response('Not found', { status: 404 });

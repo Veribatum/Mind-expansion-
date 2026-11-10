@@ -23,25 +23,26 @@ test('unattended publisher appends source lessons once and the browser can read 
   const DB = database();
   t.after(() => DB.close());
   const app = createWorker({}, BOOK_STORIES);
-  const rpc = async (name, args) => {
-    const response = await app.fetch(new Request('https://mind.example/mcp', {
-      method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+  const publish = async (lessons, headers = {}) => {
+    const response = await app.fetch(new Request('https://mind.example/api/lessons', {
+      method: 'POST', body: JSON.stringify({ lessons }),
+      headers: { 'Content-Type': 'application/json', ...headers },
     }), { DB });
-    const { result } = await response.json();
-    return { ...JSON.parse(result.content[0].text), error: result.isError };
+    return { ...await response.json(), status: response.status };
   };
-  const result = await rpc('publish_lessons', { lessons: seed });
+  const result = await publish(seed);
+  assert.equal(result.status, 200);
   assert.deepEqual(result.added, seed.map(card => card.id));
-  assert.equal(result.error, false);
-  assert.deepEqual((await rpc('publish_lessons', { lessons: seed })).added, []);
-  assert.deepEqual((await rpc('publish_lessons', { lessons: [{ ...seed[0], id: 'lesson-duplicate-title' }] })).skipped, ['lesson-duplicate-title']);
-  assert.equal((await rpc('publish_lessons', { lessons: [{ ...seed[0], id: 'lesson-missing-source', source: { ...seed[0].source, url: 'http://example.com' } }] })).error, true);
-  const response = await app.fetch(new Request('https://mind.example/api/lessons'), { DB });
+  assert.deepEqual((await publish(seed)).added, []);
+  assert.deepEqual((await publish([{ ...seed[0], id: 'lesson-duplicate-title' }])).skipped, ['lesson-duplicate-title']);
+  assert.equal((await publish([{ ...seed[0], id: 'lesson-missing-source', source: { ...seed[0].source, url: 'http://example.com' } }])).status, 400);
+  assert.equal((await publish(seed, { Origin: 'https://different.example' })).status, 403);
+  const response = await app.fetch(new Request('https://mind.example/api/lessons?index=1'), { DB });
   const page = await response.json();
   assert.equal(page.cards.length, seed.length);
   assert.equal(page.cards[0].lesson.steps.length, 3);
   assert.equal(page.next, null);
-  assert.equal((await rpc('list_lessons', {})).lessons.length, seed.length);
+  assert.equal(page.bundled.length, BOOK_STORIES.length);
 });
 
 test('inline MP4 serving returns byte ranges including the first two bytes requested by mobile players', async () => {
