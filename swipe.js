@@ -1,18 +1,20 @@
-import { feedbackKey, rankCards } from './preferences.js?v=7';
-import { TOPICS, normalize } from './learning.js?v=7';
-import { fetchCatalog } from './catalog.js?v=7';
-import { exploreIdeas } from './feed.js?v=7';
-import { storyArt } from './swipe-art.js?v=7';
-import { beatSeconds, cardKey, openingCards, storyFor } from './swipe-stories.js?v=7';
-import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=7';
-import { evidenceDetails } from './evidence.js?v=7';
-import { lessonReading } from './lessons.js?v=7';
+import { feedbackKey, isFreshCard, rankCards } from './preferences.js?v=8';
+import { TOPICS, normalize } from './learning.js?v=8';
+import { fetchCatalog } from './catalog.js?v=8';
+import { exploreIdeas } from './feed.js?v=8';
+import { storyArt } from './swipe-art.js?v=8';
+import { beatSeconds, cardKey, inCollection, openingCards, storyFor } from './swipe-stories.js?v=8';
+import { canFindClip, discoverClip, featuredClip } from './swipe-media.js?v=8';
+import { evidenceDetails } from './evidence.js?v=8';
+import { lessonReading } from './lessons.js?v=8';
 
 const SET_SIZE = 5;
 const MAX_DECK = 120;
 
 export function mountSwipe(root, options) {
-  const { day, icon, escape: esc, onAction, onPool, getRecord, getRecords, onFeedback, getDue, getProgress, resume } = options;
+  const { day, mode, icon, escape: esc, onAction, onPool, getRecord, getRecords, onFeedback,
+    getDue, getProgress, getViewed, onView, resume } = options;
+  const discovery = mode === 'feed';
   const sameDay = resume?.day === day;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const button = (action, label, symbol, extra = '') =>
@@ -22,8 +24,9 @@ export function mountSwipe(root, options) {
   root.innerHTML = `<section class="reel-layout" aria-label="Mind Expansion feed">
     <aside class="reel-intro">
       <p class="reel-eyebrow"><span></span> THE DISCOVERY FEED</p>
-      <h1>Find your<br>next idea<span>.</span></h1>
-      <p class="reel-deck-text">Book ideas you can use today. Conversations that go better. History and animal behavior worth knowing.</p>
+      <h1>${discovery ? 'Find your<br>next idea' : mode === 'history' ? 'Strange<br>history' : 'Watch an<br>idea'}<span>.</span></h1>
+      <p class="reel-deck-text">${discovery ? 'Fresh ideas from the subjects you enjoy, with room for surprises.'
+        : mode === 'history' ? 'Unusual stories from the past, and the evidence behind them.' : 'Browse the clips in the feed and play them on the card.'}</p>
       <div class="reel-nav">
         ${arrow('prev', 'Previous idea')}${arrow('next', 'Next idea')}
         <span class="reel-position" data-position>Opening edition</span>
@@ -35,8 +38,14 @@ export function mountSwipe(root, options) {
       </div>
       <p class="reel-hint">SCROLL OR USE <kbd>↑</kbd> <kbd>↓</kbd></p>
     </aside>
-    <div class="reel-device">
-      <div class="reel-track" tabindex="0" aria-label="Swipe through ideas">${blank}</div>
+    <div class="reel-main">
+      <nav class="reel-switcher" aria-label="Feed collections">
+        ${[['feed', 'spark', 'For you'], ['history', 'clock', 'Strange history'], ['videos', 'film', 'Videos']]
+          .map(([id, symbol, title]) => `<a href="#${id}"${id === mode ? ' aria-current="page"' : ''}>${icon(symbol)}${title}</a>`).join('')}
+      </nav>
+      <div class="reel-device">
+        <div class="reel-track" tabindex="0" aria-label="Swipe through ideas">${blank}</div>
+      </div>
     </div>
   </section>`;
   const track = root.querySelector('.reel-track');
@@ -55,6 +64,7 @@ export function mountSwipe(root, options) {
   let clipRequest;
   let activeClipRequest;
   let clipTimer;
+  let viewTimer;
   let inlinePlayer;
   let emptyBatches = 0;
   let paused = sameDay ? resume.paused : true;
@@ -68,7 +78,11 @@ export function mountSwipe(root, options) {
   let latestPool = [];
   let latestCatalog = [];
   let catalogCursor;
-  const recommendationKey = () => [feedbackKey(getRecords()), dailyCard?.id, ...latestCatalog.map(card => card.id)].join('|');
+  const recommendationKey = () => [discovery ? feedbackKey(getRecords()) : '', dailyCard?.id, ...latestCatalog.map(card => card.id)].join('|');
+  const canLoad = () => discovery || (mode === 'history' && catalogCursor !== null);
+  const allows = card => discovery ? isFreshCard(card, getRecords(), getViewed()) : inCollection(card, mode);
+  const opening = (extra = []) => openingCards(dailyCard, [...latestPool, ...extra], day, getRecords(), latestCatalog,
+    { mode, viewed: getViewed() });
 
   function reel(card, position, isDaily) {
     const story = storyFor(card);
@@ -115,7 +129,7 @@ export function mountSwipe(root, options) {
       ${actionButton('learn', 'Mark as learned', 'check', 'Learn')}
       <button type="button" class="reel-tool reel-next" data-swipe="next" aria-label="Next idea">${icon('down')}<span>Next</span></button>
     </div>`;
-    const entry = { element, card, story, clip, position, seen: false };
+    const entry = { element, card, story, clip, position };
     paint(entry, Math.min(beats.get(card.id) || 0, story.beats.length - 1));
     return entry;
   }
@@ -141,7 +155,7 @@ export function mountSwipe(root, options) {
 
   function append(incoming, daily, ordered = false) {
     const fragment = document.createDocumentFragment();
-    for (const card of ordered ? incoming : rankCards(incoming, getRecords())) {
+    for (const card of ordered || !discovery ? incoming : rankCards(incoming, getRecords())) {
       if (seen.has(card.id) || seen.has(cardKey(card)) || cards.length >= MAX_DECK) continue;
       seen.add(card.id);
       seen.add(cardKey(card));
@@ -150,7 +164,7 @@ export function mountSwipe(root, options) {
       cards.push(card);
       entries.push(item);
       fragment.append(item.element);
-      if (cards.length % SET_SIZE === 0) {
+      if (discovery && cards.length % SET_SIZE === 0) {
         const pause = checkpoint(cards[cards.length - SET_SIZE + 1]);
         entries.push(pause);
         fragment.append(pause.element);
@@ -163,26 +177,28 @@ export function mountSwipe(root, options) {
   }
 
   function rerankUpcoming() {
-    if (!initialized || !active || !active.card) return;
+    if (!initialized || !active) return;
     const signature = recommendationKey();
     if (signature === ratingSignature) return;
     ratingSignature = signature;
-    // Keep the current card and everything before it in place. Only rebuild the
-    // unseen tail; this also makes undo able to restore a formerly hidden idea.
-    const prefix = entries.slice(0, index + 1);
-    const previousCards = prefix.filter(entry => entry.card).map(entry => entry.card);
+    // Keep the current card and earlier swipes in place while updating the queue.
+    const wasAtEnd = active.end;
+    const keep = index + (wasAtEnd ? 0 : 1);
+    const previousCards = entries.slice(0, keep).filter(entry => entry.card).map(entry => entry.card);
     const previousIds = new Set(previousCards.map(card => card.id));
-    const candidates = [...new Map([...openingCards(dailyCard, latestPool, day, {}, latestCatalog), ...cards]
-      .filter(card => !previousIds.has(card.id)).map(card => [card.id, card])).values()];
-    const next = rankCards(candidates, getRecords()).slice(0, MAX_DECK - previousCards.length);
-    entries.slice(index + 1).forEach(entry => entry.element.remove());
-    entries.splice(index + 1);
+    const next = opening(cards).filter(card => !previousIds.has(card.id)).slice(0, MAX_DECK - previousCards.length);
+    if (wasAtEnd && !next.length) return;
+    entries.splice(keep).forEach(entry => entry.element.remove());
     cards.splice(0, cards.length, ...previousCards);
     seen.clear();
     previousCards.forEach(card => {
       seen.add(card.id); seen.add(cardKey(card)); seen.add(normalize(card.title));
     });
     append(next, dailyCard, true);
+    if (wasAtEnd) {
+      if (entries.length === keep) addEnd();
+      activate(keep);
+    }
     track.scrollTop = active.element.offsetTop;
   }
 
@@ -202,12 +218,12 @@ export function mountSwipe(root, options) {
     element.inert = true;
     element.innerHTML = `<div class="reel-top"><p class="reel-pill">${icon('spark')} EXPLORATION BREAK</p></div>
       <div class="reel-art">${storyArt('orbit', 2)}</div>
-      <div class="reel-copy"><h2>You made it through the stack.</h2>
-      <p class="reel-caption" data-end-message>${cards.length >= MAX_DECK
-        ? 'Start a fresh session another day or revisit what you kept.'
-        : 'Check for more fresh ideas or revisit something you saved.'}</p>
+      <div class="reel-copy"><h2>${discovery ? 'You’re caught up.' : 'End of this collection.'}</h2>
+      <p class="reel-caption" data-end-message>${discovery
+        ? 'Check for fresh ideas or use the tabs to revisit history and videos.'
+        : 'Switch collections to keep exploring.'}</p>
       <div class="reel-buttons">
-      ${cards.length < MAX_DECK ? '<button class="reel-primary" type="button" data-swipe="more">Find more ideas</button>' : ''}
+      ${canLoad() && cards.length < MAX_DECK ? '<button class="reel-primary" type="button" data-swipe="more">Find more ideas</button>' : ''}
       <a class="reel-text-button" href="#library">${icon('library')} Your library</a></div></div>`;
     entries.push({ element, end: true });
     track.append(element);
@@ -273,6 +289,15 @@ export function mountSwipe(root, options) {
     }
   }
 
+  function watchActive() {
+    clearTimeout(viewTimer);
+    const card = active?.card;
+    if (!card || document.hidden || getViewed().has(card.id)) return;
+    viewTimer = setTimeout(() => {
+      if (active?.card === card && !document.hidden) onView(card.id);
+    }, 750);
+  }
+
   function activate(next) {
     const entry = entries[next];
     if (!entry || entry === active) return;
@@ -288,21 +313,23 @@ export function mountSwipe(root, options) {
     elapsed = 0;
     entry.element.inert = false;
     entry.element.classList.add('is-active');
+    watchActive();
     reflect();
     if (entry.card && !entry.clip && canFindClip(entry.card)) {
       clipTimer = setTimeout(() => { void lookForClip(entry); }, 1300);
     }
-    if (cards.length - (entry.position ?? index) <= 5 && cards.length < MAX_DECK && emptyBatches < 2) {
+    if (canLoad() && cards.length - (entry.position ?? index) <= 5 && cards.length < MAX_DECK && emptyBatches < 2) {
       void more();
     }
-    if (index >= entries.length - 2 && !request && (emptyBatches >= 2 || cards.length >= MAX_DECK)) addEnd();
+    if (index >= entries.length - 2 && !request && (!canLoad() || emptyBatches >= 2 || cards.length >= MAX_DECK)) addEnd();
   }
 
   function move(delta) {
     const next = index + delta;
     if (next < 0) return;
+    if (delta > 0 && active?.card) onView(active.card.id);
     if (next >= entries.length) {
-      if (cards.length >= MAX_DECK || emptyBatches >= 2 || !navigator.onLine) {
+      if (!canLoad() || cards.length >= MAX_DECK || emptyBatches >= 2 || !navigator.onLine) {
         addEnd();
       } else {
         void more(true);
@@ -328,7 +355,7 @@ export function mountSwipe(root, options) {
   track.addEventListener('scroll', onScroll, { passive: true });
 
   async function more(explicit = false) {
-    if (stopped || request || cards.length >= MAX_DECK) return;
+    if (stopped || request || !canLoad() || cards.length >= MAX_DECK) return;
     if (!navigator.onLine) {
       emptyBatches = 2;
       if (explicit || index >= entries.length - 2) addEnd();
@@ -346,22 +373,30 @@ export function mountSwipe(root, options) {
     if (trigger) trigger.disabled = true;
     try {
       let next = [];
-      if (catalogCursor !== null) {
-        try {
-          const page = await fetchCatalog({ before: catalogCursor, signal: controller.signal });
-          catalogCursor = page.next;
-          next = page.cards.filter(card => !seen.has(card.id) && getRecord(card.id)?.feedback !== -1);
-          // The latest page is usually already represented in the opening deck.
-          if (!next.length && catalogCursor) {
-            const older = await fetchCatalog({ before: catalogCursor, signal: controller.signal });
-            catalogCursor = older.next;
-            next = older.cards.filter(card => !seen.has(card.id) && getRecord(card.id)?.feedback !== -1);
+      const excluded = new Set(seen);
+      if (discovery) {
+        for (const id of getViewed()) excluded.add(id);
+        for (const record of Object.values(getRecords())) {
+          if (!allows(record.card)) {
+            excluded.add(record.card.id);
+            excluded.add(normalize(record.card.title));
+            excluded.add(cardKey(record.card));
           }
-        } catch {
-          // Discovery can continue if the catalog cannot be reached.
         }
       }
-      if (!next.length) next = await exploreIdeas({ day, batch: batch++, seen, records: getRecords(), signal: controller.signal });
+      const eligible = card => !excluded.has(card.id) && !excluded.has(cardKey(card)) && allows(card);
+      try {
+        for (let page = 0; page < 2 && catalogCursor !== null && !next.length; page++) {
+          const result = await fetchCatalog({ before: catalogCursor, signal: controller.signal });
+          catalogCursor = result.next;
+          next = result.cards.filter(eligible);
+        }
+      } catch {
+        // Built-in lessons and the discovery source are still usable.
+      }
+      if (!next.length && discovery) {
+        next = (await exploreIdeas({ day, batch: batch++, seen: excluded, records: getRecords(), signal: controller.signal })).filter(eligible);
+      }
       if (stopped) return;
       const before = cards.length;
       const leavingEnd = !!active?.end;
@@ -388,7 +423,7 @@ export function mountSwipe(root, options) {
       clearTimeout(timer);
       request = null;
       if (!stopped) {
-        if ((index >= entries.length - 2 && emptyBatches >= 2) || (explicit && !entries[index + 1])) addEnd();
+        if ((index >= entries.length - 2 && (!canLoad() || emptyBatches >= 2)) || (explicit && !entries[index + 1])) addEnd();
         if (trigger) trigger.disabled = false;
         reflect();
       }
@@ -453,8 +488,9 @@ export function mountSwipe(root, options) {
     video.focus({ preventScroll: true });
   }
 
-  function pauseHiddenPlayer() {
+  function onVisibility() {
     if (document.hidden) inlinePlayer?.video.pause();
+    watchActive();
   }
 
   async function lookForClip(entry) {
@@ -634,6 +670,7 @@ export function mountSwipe(root, options) {
       entry.element.querySelector('[data-swipe="next"]').focus();
     } else if (entry.card) {
       const { card, story } = entry;
+      if (action || control.hasAttribute('data-scene')) onView(card.id);
       if (control.hasAttribute('data-scene')) {
         nextScene(entry, Number(control.dataset.scene));
       } else if (action === 'beat') {
@@ -692,7 +729,7 @@ export function mountSwipe(root, options) {
   sheet.addEventListener('click', handle);
   sheet.addEventListener('close', closeSheet);
   document.addEventListener('keydown', onKey);
-  document.addEventListener('visibilitychange', pauseHiddenPlayer);
+  document.addEventListener('visibilitychange', onVisibility);
   motion.addEventListener?.('change', onMotion);
   const clock = setInterval(() => tick(performance.now()), 150);
 
@@ -703,13 +740,14 @@ export function mountSwipe(root, options) {
       latestPool = pool;
       if (!initialized) {
         initialized = true;
-        append(sameDay ? resume.cards : openingCards(daily, pool, day, getRecords(), catalog), daily, true);
+        append(sameDay ? resume.cards : opening(), daily, true);
+        if (!entries.length) addEnd();
         ratingSignature = sameDay ? null : recommendationKey();
         const restored = sameDay ? Math.min(resume.index, entries.length - 1) : 0;
         if (entries[restored]) track.scrollTop = entries[restored].element.offsetTop;
         activate(restored);
         initialLoad = setTimeout(() => {
-          if (!sameDay && cards.length < 20) void more();
+          if (discovery && !sameDay && cards.length < 20) void more();
         }, 1250);
       }
       rerankUpcoming();
@@ -722,6 +760,7 @@ export function mountSwipe(root, options) {
       stopped = true;
       clearTimeout(initialLoad);
       clearTimeout(clipTimer);
+      clearTimeout(viewTimer);
       activeClipRequest?.abort();
       clearInterval(clock);
       cancelAnimationFrame(frame);
@@ -730,7 +769,7 @@ export function mountSwipe(root, options) {
       track.removeEventListener('scroll', onScroll);
       root.removeEventListener('click', handle);
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('visibilitychange', pauseHiddenPlayer);
+      document.removeEventListener('visibilitychange', onVisibility);
       releasePlayer();
       motion.removeEventListener?.('change', onMotion);
       if (sheet.open) sheet.close();

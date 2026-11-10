@@ -1,4 +1,4 @@
-import { normalize } from './learning.js?v=7';
+import { normalize } from './learning.js?v=8';
 
 const SVS = 'https://svs.gsfc.nasa.gov';
 const NASA_CREDIT = 'NASA Scientific Visualization Studio';

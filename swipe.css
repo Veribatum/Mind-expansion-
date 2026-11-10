@@ -29,8 +29,21 @@
 .reel-hint { margin-top: 24px; color: #b0acd1; font-size: .63rem; font-weight: 760; letter-spacing: .12em; }
 .reel-hint kbd { margin-left: 2px; border: 1px solid #514966; border-radius: 3px; padding: 1px 3px; letter-spacing: 0; }
 
+.reel-main { min-width: 0; }
+.reel-switcher {
+  display: flex; align-items: stretch; gap: 5px; height: 44px; margin-bottom: 8px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--panel); padding: 3px;
+}
+.reel-switcher a {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px;
+  color: var(--muted); text-decoration: none; border-radius: 8px; white-space: nowrap;
+  font-size: .74rem; font-weight: 720;
+}
+.reel-switcher .icon { width: 15px; height: 15px; }
+.reel-switcher a:hover { background: #25263b; }
+.reel-switcher a[aria-current="page"] { color: #efe8ff; background: #332c53; }
 .reel-device {
-  position: relative; height: min(760px, calc(100dvh - 76px)); min-height: 475px;
+  position: relative; height: min(708px, calc(100dvh - 128px)); min-height: 475px;
   border: 1px solid #44385f; border-radius: 24px; background: #11131f;
   box-shadow: 0 30px 70px -36px #090914c0; overflow: hidden;
 }
@@ -150,9 +163,10 @@
   .page.is-feed { padding: 0; margin: 0; max-width: none; }
   .is-feed .storage-warning { margin: 0; border-radius: 0; }
   .reel-intro { display: none; }
+  .reel-switcher { margin: 0; border-radius: 0; border-inline: 0; padding-inline: 10px; }
   .reel-layout { display: block; min-height: 0; margin-inline: auto; max-width: 530px; }
   .reel-device {
-    height: calc(100dvh - 113px - max(0px, env(safe-area-inset-top) - 6px) - max(0px, env(safe-area-inset-bottom) - 5px));
+    height: calc(100dvh - 157px - max(0px, env(safe-area-inset-top) - 6px) - max(0px, env(safe-area-inset-bottom) - 5px));
     min-height: 365px; border: 0; border-radius: 0; box-shadow: none;
   }
   .reel { padding: 9px max(15px, env(safe-area-inset-right)) 9px max(15px, env(safe-area-inset-left)); }

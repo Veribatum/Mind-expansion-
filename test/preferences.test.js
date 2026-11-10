@@ -72,3 +72,31 @@ test('discovery follows interests but keeps periodic exploration', () => {
   assert.equal(discoveryOrder(rotation, records, 2)[0][0], 'mind');
   assert.equal(discoveryOrder(rotation, records, 3)[0][0], 'animals');
 });
+
+test('the fresh feed skips prior engagement and views while the history and video collections remain browsable', () => {
+  const records = {
+    'voss-mirror': voted('voss-mirror', 1),
+    'hill-persistence': { ...voted('hill-persistence', 0), learned: '2026-11-09' },
+    'clear-two-minutes': { ...voted('clear-two-minutes', 0), saved: true },
+  };
+  const viewed = new Set(['ghost-army', 'beluga-half-sleep', 'octopus-hunting-team']);
+  const day = '2026-11-10';
+  const deck = openingCards(null, [], day, records, [], { viewed });
+  assert.ok(deck.length > 0);
+  assert.ok(deck.every(card => !Object.hasOwn(records, card.id) && !viewed.has(card.id)));
+  assert.ok(deck.findIndex(card => card.id === 'voss-label') < deck.findIndex(card => card.id === 'covey-big-rocks'));
+  assert.ok(deck.slice(0, 4).some(card => card.topic === 'culture' || card.topic === 'mysteries'));
+  const history = openingCards(null, [], day, records, [], { viewed, mode: 'history' });
+  assert.equal(history[0].id, 'ghost-army');
+  assert.ok(history.some(card => card.id === 'skinner-pigeons'));
+  const videos = openingCards(null, [], day, records, [], { viewed, mode: 'videos' });
+  assert.ok(videos.some(card => card.id === 'voss-mirror'));
+});
+
+test('a new session does not replay the same opening video after it was viewed', () => {
+  const day = '2026-11-10';
+  const first = openingCards(null, [], day);
+  const again = openingCards(null, [], day, {}, [], { viewed: new Set([first[0].id]) });
+  assert.notEqual(first[0].id, again[0].id);
+  assert.ok(!again.some(card => card.id === first[0].id));
+});

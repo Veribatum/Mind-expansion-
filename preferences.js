@@ -1,4 +1,4 @@
-import { normalize } from './learning.js?v=7';
+import { normalize } from './learning.js?v=8';
 
 const feedback = record => record?.feedback || 0;
 const features = card => [
@@ -15,6 +15,12 @@ export function affinity(card, records = {}) {
     }
   }
   return features(card).reduce((sum, [key, weight]) => sum + Math.max(-4, Math.min(4, weights.get(key) || 0)) * weight, 0);
+}
+
+// A rating informs recommendations without sending its own card back into discovery.
+export function isFreshCard(card, records, viewed) {
+  const record = records[card.id];
+  return !viewed.has(card.id) && !record?.feedback && !record?.learned && !record?.saved;
 }
 
 // Exclude explicit dislikes, prefer shared interests, and keep an exploration slot

@@ -1,15 +1,16 @@
 import {
   TOPICS, addDays, dayKey, dayNumber, decodeState, dueRecords, finishReview, learn, matches, mergeState,
   newRecord, newState, progressFor, rate, reviewDate, validCard,
-} from './learning.js?v=7';
-import { fetchCatalog } from './catalog.js?v=7';
-import { selectIdea } from './feed.js?v=7';
-import { mountSwipe } from './swipe.js?v=7';
-import { evidenceDetails } from './evidence.js?v=7';
-import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=7';
-import { openLibrary, onLocalChange, readLocalState, writeLocalState } from './storage.js?v=7';
+} from './learning.js?v=8';
+import { fetchCatalog } from './catalog.js?v=8';
+import { selectIdea } from './feed.js?v=8';
+import { mountSwipe } from './swipe.js?v=8';
+import { evidenceDetails } from './evidence.js?v=8';
+import { authoredLesson, lessonReading, upgradeLessonState } from './lessons.js?v=8';
+import { openLibrary, onLocalChange, readLocalState, readLocalViews, writeLocalState, writeLocalView } from './storage.js?v=8';
 
-const ROUTES = ['feed', 'today', 'progress', 'review', 'library', 'settings'];
+const FEED_MODES = ['feed', 'history', 'videos'];
+const ROUTES = [...FEED_MODES, 'today', 'progress', 'review', 'library', 'settings'];
 const KINDS = { book: 'Book insight', research: 'Research insight', essay: 'Field note', encyclopedia: 'Encyclopedia' };
 const app = document.querySelector('#app');
 const main = document.querySelector('#main');
@@ -20,6 +21,7 @@ let state = newState();
 let library;
 let pool = [];
 let catalog = [];
+const viewed = readLocalViews();
 let catalogCheckedAt = 0;
 let channel;
 let limit = 30;
@@ -34,6 +36,7 @@ let practiceId = '';
 let noticeTimer;
 let swipe;
 let swipeDay;
+let swipeMode;
 let swipeResume;
 
 async function saveChanges(changes) {
@@ -265,22 +268,23 @@ function reviewView() {
 }
 
 function libraryResults() {
-  const records = Object.values(state.records).filter(record => record.learned || record.saved);
-  const items = records.filter(record => (filter === 'all' || record[filter]) && matches(record, search))
+  const records = Object.values(state.records).filter(record => record.learned || record.saved || record.feedback === 1);
+  const items = records.filter(record => (filter === 'liked' ? record.feedback === 1 : filter === 'all' || record[filter]) && matches(record, search))
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   if (!items.length) {
     const emptyLibrary = !records.length;
     return `<section class="panel"><h2>${emptyLibrary ? 'Your shelf is empty.' : 'No matching ideas.'}</h2>
-      <p>${emptyLibrary ? 'Learn or save an idea and it’ll be here when you want to find it again.'
+      <p>${emptyLibrary ? 'Like, learn or save an idea to keep it here.'
         : 'Try a different keyword or change the filter.'}</p>
       ${emptyLibrary ? '<div class="button-row"><a class="button primary" href="#today">See today’s idea</a></div>' : ''}</section>`;
   }
   return `<p class="library-count">${items.length} ${items.length === 1 ? 'idea' : 'ideas'}</p>
-    <div class="library-list">${items.slice(0, limit).map(({ card, learned, saved }) =>
+    <div class="library-list">${items.slice(0, limit).map(({ card, learned, saved, feedback }) =>
       `<button type="button" class="library-item" data-detail="${card.id}">
         <span><strong>${escape(card.title)}</strong><small>${escape(card.kicker)} · ${escape(card.source.byline)}</small></span>
         <span class="record-actions">${learned ? icon('check') + '<span class="sr-only">Learned</span>' : ''}
-        ${saved ? icon('bookmark') + '<span class="sr-only">Saved</span>' : ''}${icon('arrow')}</span></button>`).join('')}</div>
+        ${saved ? icon('bookmark') + '<span class="sr-only">Saved</span>' : ''}
+        ${feedback === 1 ? icon('thumb-up') + '<span class="sr-only">Liked</span>' : ''}${icon('arrow')}</span></button>`).join('')}</div>
     ${items.length > limit ? '<div class="button-row"><button class="button" type="button" data-more>Show more</button></div>' : ''}`;
 }
 
@@ -290,7 +294,7 @@ function libraryView() {
       <label class="searchbox">${icon('search')}<span class="sr-only">Search your library</span>
         <input type="search" id="search" value="${escape(search)}" placeholder="Search your ideas…" autocomplete="off"></label>
       <div class="filters" role="group" aria-label="Filter ideas">
-        ${[['all', 'All'], ['learned', 'Learned'], ['saved', 'Saved']].map(([key, label]) =>
+        ${[['all', 'All'], ['liked', 'Liked'], ['learned', 'Learned'], ['saved', 'Saved']].map(([key, label]) =>
           `<button type="button" class="filter" data-filter="${key}" aria-pressed="${filter === key}">${label}</button>`).join('')}
       </div></div><div id="library-results" aria-live="polite">${libraryResults()}</div>`;
 }
@@ -299,7 +303,7 @@ function preferencesView() {
   const ratings = Object.values(state.records).filter(record => record.feedback)
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   return `<section class="panel preferences-panel"><p class="eyebrow">Make it yours</p><h2>Your feed, your interests</h2>
-    <p>Like an idea for more related subjects, authors and book ideas. Dislike hides that idea from future recommendations and reduces similar ones. New subjects still get a place in your feed. Ratings stay in this browser and are included in backups.</p>
+    <p>Likes guide you to fresh related ideas. Find the original lesson in Library → Liked. For you remembers what you’ve seen on this device. Ratings are included in backups.</p>
     ${ratings.length ? `<p class="preference-count">${ratings.filter(r => r.feedback === 1).length} liked · ${ratings.filter(r => r.feedback === -1).length} disliked</p>
     <ul class="preference-list">${ratings.map(record => `<li><span><small>${record.feedback === 1 ? 'Liked' : 'Disliked'}</small>${escape(record.card.title)}</span>
     <button type="button" class="button" data-undo-feedback="${record.card.id}" aria-label="Undo rating for ${escape(record.card.title)}">Undo</button></li>`).join('')}</ul>
@@ -309,7 +313,7 @@ function preferencesView() {
 
 async function changeFeedback(card, value) {
   await updateRecord(card, record => ({ ...record, feedback: value, updatedAt: new Date().toISOString() }));
-  if (storageOK) say(value === 1 ? 'Liked. More related ideas are coming up. Tap Like again to undo.'
+  if (storageOK) say(value === 1 ? 'Liked. Find this idea in Library → Liked.'
     : value === -1 ? 'Disliked. Fewer related ideas; this one stays out of future recommendations. Tap again to undo.'
     : 'Rating removed. Your recommendations have been updated.');
 }
@@ -331,7 +335,7 @@ function settingsView() {
 
 function releaseSwipe() {
   if (!swipe) return;
-  swipeResume = swipe.snapshot();
+  if (swipeMode === 'feed') swipeResume = swipe.snapshot();
   swipe.destroy();
   swipe = null;
 }
@@ -353,9 +357,25 @@ async function refreshCatalog(force = false) {
     const result = await fetchCatalog();
     catalog = result.cards;
     if (library) void library.writeCatalog(catalog).catch(() => {});
-    if (route === 'feed') render();
+    if (FEED_MODES.includes(route)) render();
   } catch {
     // The last good catalog and built-in lessons are still available.
+  }
+}
+
+async function rememberView(id) {
+  if (viewed.has(id)) return;
+  viewed.add(id);
+  try {
+    if (library) {
+      await library.writeView(id);
+      channel?.postMessage({ viewedId: id });
+    } else {
+      writeLocalView(id);
+    }
+  } catch {
+    // Keep the session’s viewing history if persistent storage is unavailable.
+    try { writeLocalView(id); } catch {}
   }
 }
 
@@ -366,17 +386,20 @@ function rememberPool(cards) {
 
 function render() {
   const views = { today: todayView, progress: progressView, review: reviewView, library: libraryView, settings: settingsView };
-  app.classList.toggle('is-feed', route === 'feed');
-  document.body.classList.toggle('feed-open', route === 'feed');
-  if (route === 'feed') {
-    if (!swipe || swipeDay !== today) {
+  const inFeed = FEED_MODES.includes(route);
+  app.classList.toggle('is-feed', inFeed);
+  document.body.classList.toggle('feed-open', inFeed);
+  if (inFeed) {
+    if (!swipe || swipeDay !== today || swipeMode !== route) {
       releaseSwipe();
       swipeDay = today;
+      swipeMode = route;
       swipe = mountSwipe(app, {
-        day: today, icon, escape, onAction: changeFeedRecord, onPool: rememberPool,
+        day: today, mode: route, icon, escape, onAction: changeFeedRecord, onPool: rememberPool,
         getRecord: id => state.records[id], getRecords: () => state.records, onFeedback: changeFeedback,
         getDue: () => dueRecords(state, today).length, getProgress: () => progressFor(state, today),
-        resume: swipeResume,
+        getViewed: () => viewed, onView: rememberView,
+        resume: route === 'feed' ? swipeResume : undefined,
       });
     }
     swipe.update(state.days[today], pool, catalog);
@@ -386,7 +409,7 @@ function render() {
   }
   app.setAttribute('aria-busy', route === 'today' && pendingDay === today ? 'true' : 'false');
   for (const link of document.querySelectorAll('[data-route]')) {
-    if (link.dataset.route === route) link.setAttribute('aria-current', 'page');
+    if (link.dataset.route === (inFeed ? 'feed' : route)) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
   const count = dueRecords(state, today).length;
@@ -465,7 +488,7 @@ function updateViewForRecord(id, button) {
     if (button?.matches('[data-save]')) dialog.querySelector('[data-save]')?.focus();
     else dialog.querySelector('[data-close]')?.focus();
     if (route === 'library') document.querySelector('#library-results').innerHTML = libraryResults();
-    if (!updated?.saved && !updated?.learned) dialog.close();
+    if (!updated?.saved && !updated?.learned && updated?.feedback !== 1) dialog.close();
   } else {
     render();
     const target = button?.matches('[data-learn]') ? '[data-practice]' : '[data-save]';
@@ -667,9 +690,13 @@ async function start() {
     state = upgradeLessonState(library.initial);
     pool = library.pool.map(authoredLesson);
     catalog = library.catalog;
+    for (const id of library.viewed) viewed.add(id);
     if ('BroadcastChannel' in window) {
       channel = new BroadcastChannel('mind-expansion.library');
-      channel.onmessage = event => acceptUpdates(event.data);
+      channel.onmessage = ({ data }) => {
+        if (typeof data?.viewedId === 'string') viewed.add(data.viewedId);
+        else acceptUpdates(data);
+      };
     }
   } catch {
     try {

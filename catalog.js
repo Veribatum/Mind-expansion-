@@ -1,4 +1,4 @@
-import { validCard } from './learning.js?v=7';
+import { validCard } from './learning.js?v=8';
 
 export async function fetchCatalog({ before, signal = AbortSignal.timeout(4000) } = {}) {
   const url = new URL('./api/lessons', location.href);

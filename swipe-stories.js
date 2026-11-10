@@ -1,10 +1,10 @@
-import { featuredClip } from './swipe-media.js?v=7';
-import { BOOK_STORIES } from './book-stories.js?v=7';
-import { rankCards } from './preferences.js?v=7';
-import { EDITORIAL } from './cards.js?v=7';
-import { authoredLesson, isLesson } from './lessons.js?v=7';
-import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=7';
-import { dayNumber, normalize } from './learning.js?v=7';
+import { featuredClip } from './swipe-media.js?v=8';
+import { BOOK_STORIES } from './book-stories.js?v=8';
+import { isFreshCard, rankCards } from './preferences.js?v=8';
+import { EDITORIAL } from './cards.js?v=8';
+import { authoredLesson, isLesson } from './lessons.js?v=8';
+import { DEEP_CARDS, DEEP_STORIES } from './deep-cuts.js?v=8';
+import { dayNumber, normalize } from './learning.js?v=8';
 
 const BOOK_LOOKS = {
   'voss-mirror': ['dialogue', 'violet'], 'voss-label': ['dialogue', 'rose'], 'voss-how-question': ['dialogue', 'blue'],
@@ -159,7 +159,14 @@ export function cardKey(card) {
   return normalize(card.id.startsWith('simple-wiki-') ? card.title : card.kicker || card.title);
 }
 
-export function openingCards(daily, pool, day, records = {}, catalog = []) {
+export function inCollection(card, mode) {
+  if (mode === 'videos') return !!featuredClip(card);
+  return card.topic === 'mysteries' || (card.topic === 'culture' && (
+    card.kind !== 'research' || card.tags.some(tag => /\bhistor(y|ical)\b/i.test(tag))
+  ));
+}
+
+export function openingCards(daily, pool, day, records = {}, catalog = [], { mode = 'feed', viewed = new Set() } = {}) {
   const byId = new Map([...EDITORIAL, ...FEATURED, ...DEEP_CARDS, ...BOOK_STORIES].map(card => [card.id, card]));
   const editions = [
     ['voss-mirror', 'ghost-army', 'hill-definite-purpose', 'beluga-half-sleep', 'covey-big-rocks'],
@@ -170,25 +177,31 @@ export function openingCards(daily, pool, day, records = {}, catalog = []) {
   const offset = ((dayNumber(day) - dayNumber('2026-11-05')) % editions.length + editions.length) % editions.length;
   const ordered = [...editions.slice(offset), ...editions.slice(0, offset)].flat();
   const featuredBooks = ['sun-tzu-like-water', 'carnegie-speak-to-their-interests', 'sun-tzu-know-both-sides', 'sun-tzu-solve-without-a-fight'];
-  const book = byId.get(featuredBooks[offset]);
+  const history = ['ghost-army', 'skinner-pigeons', 'mincemeat', 'dazzle-ships'].map(id => byId.get(id));
+  const clips = ['beluga-half-sleep', 'octopus-hunting-team', 'voss-mirror'];
   const candidates = [
-    book, ...catalog.slice(0, 3), ...ordered.slice(0, 5).map(id => byId.get(id)), daily,
-    ...ordered.slice(5).map(id => byId.get(id)), ...BOOK_STORIES,
-    ...DEEP_CARDS.filter(card => card.id !== 'cold-war-art'), ...EDITORIAL, ...FEATURED, ...catalog.slice(3), ...pool.filter(isLesson),
-  ].filter(card => card && card.id !== 'cold-war-art').map(authoredLesson).filter(isLesson);
+    ...(mode === 'history' ? history : mode === 'videos' ? clips.map(id => byId.get(id)) : []),
+    byId.get(featuredBooks[offset]), ...catalog.slice(0, 3), ...ordered.slice(0, 5).map(id => byId.get(id)), daily,
+    ...ordered.slice(5).map(id => byId.get(id)), ...BOOK_STORIES, ...DEEP_CARDS,
+    ...EDITORIAL, ...FEATURED, ...catalog.slice(3), ...pool.filter(isLesson),
+  ].filter(Boolean).map(authoredLesson).filter(isLesson);
   const ids = new Set();
   const keys = new Set();
-  const ranked = rankCards(candidates.filter(card => {
+  const unique = candidates.filter(card => {
     const key = cardKey(card);
     if (ids.has(card.id) || keys.has(key)) return false;
     ids.add(card.id);
     keys.add(key);
     return true;
-  }), records);
-  const clips = ['beluga-half-sleep', 'octopus-hunting-team', 'voss-mirror'];
+  });
+  if (mode !== 'feed') return unique.filter(card => inCollection(card, mode));
+  const ranked = rankCards(unique.filter(card => card.id !== 'cold-war-art' && isFreshCard(card, records, viewed)), records);
   const first = ((dayNumber(day) % clips.length) + clips.length) % clips.length;
   const rotation = [...clips.slice(first), ...clips.slice(0, first)];
-  const video = rotation.map(id => ranked.find(card => card.id === id && featuredClip(card)?.local))
-    .filter(Boolean).sort((a, b) => Number(!!records[a.id]?.learned) - Number(!!records[b.id]?.learned))[0];
-  return video ? [video, ...ranked.filter(card => card !== video)] : ranked;
+  const video = rotation.map(id => ranked.find(card => card.id === id && featuredClip(card)?.local)).find(Boolean);
+  if (video) ranked.unshift(...ranked.splice(ranked.indexOf(video), 1));
+  // Keep a history discovery in the first few swipes even with strong ratings in other topics.
+  const historyIndex = ranked.findIndex(card => inCollection(card, 'history'));
+  if (historyIndex > 3) ranked.splice(3, 0, ...ranked.splice(historyIndex, 1));
+  return ranked;
 }

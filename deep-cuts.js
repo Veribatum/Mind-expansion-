@@ -1,4 +1,4 @@
-import { applyLesson } from './lessons.js?v=7';
+import { applyLesson } from './lessons.js?v=8';
 
 const source = (title, byline, url) => ({ title, byline, url });
 

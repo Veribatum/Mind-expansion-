@@ -1,8 +1,10 @@
-import { decodeState, mergeRecord, mergeState, newState, validCard } from './learning.js?v=7';
+import { decodeState, mergeRecord, mergeState, newState, validCard } from './learning.js?v=8';
 
 const STATE_KEY = 'mind-expansion.state.v1';
 const POOL_KEY = 'mind-expansion.pool.v1';
 const CATALOG_KEY = 'mind-expansion.catalog.v1';
+const VIEW_PREFIX = 'viewed:';
+const LOCAL_VIEWS_KEY = 'mind-expansion.viewed.v1';
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -36,6 +38,21 @@ export function onLocalChange(event, listener) {
   if (event.key === STATE_KEY) listener(readLocalState());
 }
 
+export function readLocalViews() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(LOCAL_VIEWS_KEY) || '[]');
+    return new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function writeLocalView(id) {
+  const ids = readLocalViews();
+  ids.add(id);
+  localStorage.setItem(LOCAL_VIEWS_KEY, JSON.stringify([...ids]));
+}
+
 export async function openLibrary() {
   const db = await openDatabase();
   db.onversionchange = () => db.close();
@@ -47,6 +64,7 @@ export async function openLibrary() {
   const cards = reader.objectStore('days').getAll();
   const cached = reader.objectStore('cache').get(POOL_KEY);
   const cachedCatalog = reader.objectStore('cache').get(CATALOG_KEY);
+  const viewedKeys = reader.objectStore('cache').getAllKeys(IDBKeyRange.bound(VIEW_PREFIX, VIEW_PREFIX + '\uffff'));
   await completion;
   const loaded = newState();
   for (const record of records.result) loaded.records[record.card.id] = record;
@@ -97,6 +115,8 @@ export async function openLibrary() {
   }
   return {
     initial, pool, write, catalog: (cachedCatalog.result || []).filter(validCard),
+    viewed: new Set(viewedKeys.result.map(key => key.slice(VIEW_PREFIX.length))),
+    writeView: id => writeCache(VIEW_PREFIX + id, true),
     writePool: value => writeCache(POOL_KEY, value),
     writeCatalog: value => writeCache(CATALOG_KEY, value),
   };

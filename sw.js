@@ -1,9 +1,9 @@
-const CACHE = 'mind-expansion-shell-v7';
+const CACHE = 'mind-expansion-shell-v8';
 const SHELL = [
-  './catalog.js?v=7', './media/beluga.jpg', './media/octopus-hunt.jpg', './media/voss-mirror.jpg',
-  './book-stories.js?v=7', './preferences.js?v=7', './', './index.html', './styles.css?v=7', './app.js?v=7', './learning.js?v=7', './cards.js?v=7',
-  './feed.js?v=7', './storage.js?v=7', './swipe.js?v=7', './swipe.css?v=7', './swipe-stories.js?v=7', './swipe-art.js?v=7', './swipe-media.js?v=7', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
-  './icon-192.png', './icon-512.png', './evidence.js?v=7', './deep-cuts.js?v=7', './deep-art.js?v=7', './lessons.js?v=7', './source-lessons.js?v=7',
+  './catalog.js?v=8', './media/beluga.jpg', './media/octopus-hunt.jpg', './media/voss-mirror.jpg',
+  './book-stories.js?v=8', './preferences.js?v=8', './', './index.html', './styles.css?v=8', './app.js?v=8', './learning.js?v=8', './cards.js?v=8',
+  './feed.js?v=8', './storage.js?v=8', './swipe.js?v=8', './swipe.css?v=8', './swipe-stories.js?v=8', './swipe-art.js?v=8', './swipe-media.js?v=8', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png',
+  './icon-192.png', './icon-512.png', './evidence.js?v=8', './deep-cuts.js?v=8', './deep-art.js?v=8', './lessons.js?v=8', './source-lessons.js?v=8',
 ];
 
 self.addEventListener('install', event => {

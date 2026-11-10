@@ -1,10 +1,10 @@
-import { BOOK_STORIES } from './book-stories.js?v=7';
-import { discoveryOrder, rankCards } from './preferences.js?v=7';
-import { EDITORIAL } from './cards.js?v=7';
-import { DEEP_CARDS } from './deep-cuts.js?v=7';
-import { authoredLesson, isLesson } from './lessons.js?v=7';
-import { buildSourceLesson } from './source-lessons.js?v=7';
-import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=7';
+import { BOOK_STORIES } from './book-stories.js?v=8';
+import { discoveryOrder, rankCards } from './preferences.js?v=8';
+import { EDITORIAL } from './cards.js?v=8';
+import { DEEP_CARDS } from './deep-cuts.js?v=8';
+import { authoredLesson, isLesson } from './lessons.js?v=8';
+import { buildSourceLesson } from './source-lessons.js?v=8';
+import { dayNumber, normalize, seenCards, validCard } from './learning.js?v=8';
 
 const WIKI = 'https://simple.wikipedia.org/w/api.php';
 const ROTATION = [
